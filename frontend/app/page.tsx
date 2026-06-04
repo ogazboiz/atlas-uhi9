@@ -124,17 +124,19 @@ function CTASection() {
     return (
         <section className="w-full max-w-3xl mt-20 mb-12">
             <div className="border border-zinc-800 rounded-xl p-8 text-center bg-zinc-950">
-                <h2 className="text-2xl font-semibold mb-2">Ready to deposit</h2>
-                <p className="text-zinc-400 mb-6">Connect your wallet to add liquidity through the Atlas hook.</p>
-                <div className="flex justify-center mb-6">
+                <h2 className="text-2xl font-semibold mb-2">See the live demo</h2>
+                <p className="text-zinc-400 mb-6">
+                    Watch an Atlas position stay flat while a vanilla LP bleeds during a simulated price dump.
+                </p>
+                <Link
+                    href="/compare"
+                    className="inline-block bg-emerald-500 hover:bg-emerald-400 text-black font-medium px-6 py-3 rounded-lg transition-colors"
+                >
+                    Open the live comparison →
+                </Link>
+                <div className="flex justify-center mt-6">
                     <ConnectButton />
                 </div>
-                <Link
-                    href="/deposit"
-                    className="inline-block text-sm text-zinc-400 hover:text-white underline underline-offset-4"
-                >
-                    Go to deposit page →
-                </Link>
             </div>
         </section>
     );
