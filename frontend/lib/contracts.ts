@@ -16,6 +16,17 @@ export const ATLAS = {
 /// Uniswap v4 PoolManager on Unichain Sepolia.
 export const POOL_MANAGER: Address = "0x00B036B58a818B1BC34d502D3fE730Db729e62AC";
 
+/// Reactive Network components (cross-chain integration).
+/// Source: contracts/deployments/reactive-1301.json
+export const REACTIVE = {
+    callback: "0x3d35ba0Bd93231cCa2B29eAe3461f03c3adE3BFB" as Address, // AtlasCallback on Unichain Sepolia
+    callbackProxy: "0x9299472A6399Fd1027ebF067571Eb3e3D7837FC4" as Address, // RN proxy on Unichain
+    reactive: "0x9A8629e7D3FcCDbC4d1DE24d43013452cfF23cF0" as Address, // AtlasReactive on Lasna
+    reactiveChainId: 5318007,
+    reactiveExplorer: "https://lasna.reactscan.net",
+    poolId: "0xed78b4fbdc483220ba4daef7fdd972fdae8a1a06690c5090d6e92a27ccfc2598",
+} as const;
+
 /// The Atlas-managed pool configuration. currency0 = lower address.
 const c0Lower = ATLAS.usdc.toLowerCase() < ATLAS.weth.toLowerCase();
 export const POOL_CONFIG = {

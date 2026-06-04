@@ -8,6 +8,7 @@ import {formatUnits, parseUnits} from "viem";
 import {ATLAS} from "@/lib/contracts";
 import {MOCK_ORACLE_ABI} from "@/lib/abis";
 import {PriceChart, type ChartPoint} from "@/components/PriceChart";
+import {ReactiveStatus} from "@/components/ReactiveStatus";
 
 /// Initial LP composition for the chart: 1 ETH + 3500 USDC.
 /// Vanilla value = ETH_qty * price + USDC_qty; Atlas value stays flat (delta-neutral).
@@ -52,7 +53,7 @@ export default function ComparePage() {
             setPoints(baseline);
             return;
         }
-        setPoints((prev) => {
+        setPoints((prev: ChartPoint[]) => {
             const last = prev[prev.length - 1];
             const t = Math.max(now, (last?.time ?? now) + 1);
             return [...prev, {time: t, vanilla: ETH_QTY * currentPrice + USDC_QTY, atlas: ATLAS_FLAT_VALUE}];
@@ -129,6 +130,8 @@ export default function ComparePage() {
                     isConnected={isConnected}
                     currentPrice={currentPrice}
                 />
+
+                <ReactiveStatus />
             </main>
             <Footer />
         </div>
