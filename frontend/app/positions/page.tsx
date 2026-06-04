@@ -55,23 +55,29 @@ export default function PositionsPage() {
     });
 
     // Pull historical deposit events for this user from the vault.
+    // We avoid viem's `args:` indexed filter because some public RPCs
+    // (PublicNode included) reject topic-filtered requests with empty
+    // results instead of an error. Instead, query by event signature only
+    // and filter to the user's address client-side.
     useEffect(() => {
         if (!publicClient || !address) return;
         let cancelled = false;
         (async () => {
             try {
                 const latest = await publicClient.getBlockNumber();
-                const fromBlock = latest > 100000n ? latest - 100000n : 0n;
+                const fromBlock = latest > 20000n ? latest - 20000n : 0n;
                 const logs = await publicClient.getLogs({
                     address: ATLAS.vault,
                     event: DEPOSIT_EVENT,
-                    args: {owner: address},
                     fromBlock,
                     toBlock: "latest",
                 });
                 if (cancelled) return;
+                const mine = logs.filter(
+                    (log) => (log.args.owner ?? "").toLowerCase() === address.toLowerCase(),
+                );
                 const records = await Promise.all(
-                    logs.map(async (log) => {
+                    mine.map(async (log) => {
                         const block = await publicClient.getBlock({blockHash: log.blockHash!});
                         return {
                             blockNumber: log.blockNumber!,
@@ -95,7 +101,11 @@ export default function PositionsPage() {
 
     const totalDeposited = deposits.reduce((sum, d) => sum + d.assets, 0n);
     const claim = (previewRedeem as bigint) ?? 0n;
-    const yieldAmount = claim > totalDeposited ? claim - totalDeposited : 0n;
+    // Only compute yield when we have a known cost basis. With no deposit
+    // history (RPC limits, transferred-in aLP, etc.) the safest answer is
+    // "unknown" rather than reporting the full claim as profit.
+    const haveBasis = deposits.length > 0;
+    const yieldAmount = haveBasis && claim > totalDeposited ? claim - totalDeposited : 0n;
     const aprStr = couponBps === undefined ? "—" : `${(Number(couponBps) / 100).toFixed(2)}%`;
 
     return (
@@ -124,6 +134,7 @@ export default function PositionsPage() {
                             yieldAmount={yieldAmount}
                             apr={aprStr}
                             usdcBalance={(usdcBalance as bigint) ?? 0n}
+                            haveBasis={haveBasis}
                         />
                         <DepositHistory deposits={deposits} />
                         <div className="mt-6">
@@ -193,6 +204,7 @@ function Summary({
     yieldAmount,
     apr,
     usdcBalance,
+    haveBasis,
 }: {
     shares: bigint;
     claim: bigint;
@@ -200,17 +212,24 @@ function Summary({
     yieldAmount: bigint;
     apr: string;
     usdcBalance: bigint;
+    haveBasis: boolean;
 }) {
     const hasPosition = shares > 0n;
+    const yieldValue = !hasPosition
+        ? "—"
+        : haveBasis
+          ? `+${fmt(yieldAmount, 4)}`
+          : "—";
+    const yieldSub = !hasPosition
+        ? ""
+        : haveBasis
+          ? `at ${apr} · cost basis ${fmt(deposited, 2)} USDC`
+          : "Deposit history not yet indexed";
     return (
         <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Stat label="aLP shares" value={hasPosition ? fmt(shares, 4) : "—"} />
             <Stat label="Claim value" value={hasPosition ? `${fmt(claim, 2)} USDC` : "—"} accent={hasPosition} />
-            <Stat
-                label="Accrued yield"
-                value={hasPosition ? `+${fmt(yieldAmount, 4)}` : "—"}
-                sub={hasPosition ? `at ${apr}` : ""}
-            />
+            <Stat label="Accrued yield" value={yieldValue} sub={yieldSub} />
             <Stat label="USDC wallet" value={`${fmt(usdcBalance, 2)}`} sub="mock test USDC" />
         </section>
     );
