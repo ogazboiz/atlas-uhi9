@@ -11,7 +11,7 @@ export default function Home() {
     return (
         <div className="flex flex-col flex-1">
             <Header />
-            <main className="flex flex-1 flex-col items-center px-6 py-20 max-w-5xl mx-auto w-full">
+            <main className="flex flex-1 flex-col items-center px-4 sm:px-6 py-12 sm:py-20 max-w-5xl mx-auto w-full">
                 <Hero />
                 <LiveStats />
                 <HowItWorks />
@@ -28,7 +28,15 @@ function Header() {
             <Link href="/" className="text-lg font-semibold tracking-tight">
                 Atlas
             </Link>
-            <ConnectButton showBalance={false} chainStatus="icon" />
+            <div className="flex items-center gap-4">
+                <Link href="/compare" className="text-sm text-zinc-400 hover:text-white hidden sm:inline">
+                    Compare
+                </Link>
+                <Link href="/deposit" className="text-sm text-zinc-400 hover:text-white hidden sm:inline">
+                    Deposit
+                </Link>
+                <ConnectButton showBalance={false} chainStatus="icon" />
+            </div>
         </header>
     );
 }
@@ -39,11 +47,11 @@ function Hero() {
             <p className="text-xs uppercase tracking-widest text-zinc-500 mb-4">
                 UHI9 Hookathon · Reactive Network Sponsor Track
             </p>
-            <h1 className="text-5xl md:text-6xl font-semibold tracking-tight leading-tight mb-6">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight leading-tight mb-6">
                 Hedged LP yields. <br />
                 <span className="text-zinc-500">Autonomous. Fixed APR.</span>
             </h1>
-            <p className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
                 Atlas is a Uniswap v4 hook that pairs every LP deposit with a delta-matched perpetual short,
                 paying out a flat 8% APR while a Reactive Smart Contract handles rebalancing across chains.
             </p>
@@ -98,12 +106,20 @@ function CTASection() {
                 <p className="text-zinc-400 mb-6">
                     Watch an Atlas position stay flat while a vanilla LP bleeds during a simulated price dump.
                 </p>
-                <Link
-                    href="/compare"
-                    className="inline-block bg-emerald-500 hover:bg-emerald-400 text-black font-medium px-6 py-3 rounded-lg transition-colors"
-                >
-                    Open the live comparison →
-                </Link>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <Link
+                        href="/compare"
+                        className="inline-block bg-emerald-500 hover:bg-emerald-400 text-black font-medium px-6 py-3 rounded-lg transition-colors"
+                    >
+                        Open the live comparison →
+                    </Link>
+                    <Link
+                        href="/deposit"
+                        className="inline-block border border-zinc-700 hover:border-zinc-500 text-white font-medium px-6 py-3 rounded-lg transition-colors"
+                    >
+                        Try a deposit →
+                    </Link>
+                </div>
                 <div className="flex justify-center mt-6">
                     <ConnectButton />
                 </div>

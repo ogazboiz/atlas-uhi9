@@ -112,20 +112,22 @@ export default function ComparePage() {
     return (
         <div className="flex flex-col flex-1">
             <Header />
-            <main className="flex flex-1 flex-col px-6 py-10 max-w-6xl mx-auto w-full">
-                <div className="mb-8">
+            <main className="flex flex-1 flex-col px-4 sm:px-6 py-6 sm:py-10 max-w-6xl mx-auto w-full">
+                <div className="mb-6 sm:mb-8">
                     <Link href="/" className="text-xs text-zinc-500 hover:text-white">
                         ← Back
                     </Link>
-                    <h1 className="text-4xl font-semibold tracking-tight mt-2 mb-2">Atlas vs Vanilla LP</h1>
-                    <p className="text-zinc-400 max-w-2xl">
+                    <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight mt-2 mb-2">
+                        Atlas vs Vanilla LP
+                    </h1>
+                    <p className="text-zinc-400 max-w-2xl text-sm sm:text-base">
                         Both lines start at $7,000 (1 ETH + 3500 USDC). The Atlas line is delta-hedged so it stays
                         flat; the vanilla line tracks the volatile asset. Trigger a price move below to see the
                         divergence open up in real time.
                     </p>
                 </div>
 
-                <div className="sticky top-0 z-10 -mx-6 px-6 py-3 bg-black/80 backdrop-blur-md border-b border-zinc-900">
+                <div className="lg:sticky lg:top-0 z-10 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-black/80 backdrop-blur-md border-b border-zinc-900">
                     <StatsBar
                         currentPrice={currentPrice}
                         vanillaValue={vanillaValue}

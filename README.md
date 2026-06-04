@@ -2,16 +2,26 @@
 
 **Delta-Hedged LP Vault Hook for Uniswap v4**
 
-Atlas is a Uniswap v4 hook that pairs every LP deposit with an automatic, autonomously-rebalanced perpetual short position, transforming impermanent loss into hedged, smoothed yield. Cross-chain rebalancing is driven by Reactive Smart Contracts (RSCs) on the Reactive Network.
+Atlas turns volatile Uniswap LP positions into fixed-rate income. Every deposit is paired with a delta-matched perpetual short opened by the hook, and a Reactive Smart Contract on Reactive Lasna autonomously triggers rebalances when the on-chain price moves. LP fees and funding income flow into an ERC-4626 vault that pays out a flat per-block coupon.
 
-> Submission for the **UHI9 Hookathon** — Track: *Impermanent Loss & Yield Systems* — Sponsor: *Reactive Network*
+> UHI9 Hookathon submission. Track: *Impermanent Loss & Yield Systems*. Sponsor: *Reactive Network*.
 
-## Live
+## Try it now
 
-- **Demo**: https://atlas-uhi9-u148.vercel.app
-- **Comparison chart**: https://atlas-uhi9-u148.vercel.app/compare
-- **Pool chain**: Unichain Sepolia (chain 1301)
-- **Reactive chain**: Lasna testnet (chain 5318007)
+| | Link |
+|---|---|
+| **Live demo** | https://atlas-uhi9-u148.vercel.app |
+| Comparison chart (Atlas vs Vanilla LP, with on-chain trigger button) | https://atlas-uhi9-u148.vercel.app/compare |
+| Deposit page (mint test USDC, deposit into the live vault) | https://atlas-uhi9-u148.vercel.app/deposit |
+| Reactive integration deep-dive | [docs/reactive-integration.md](docs/reactive-integration.md) |
+
+**60-second demo path:**
+1. Open `/compare`. Connect any wallet on Unichain Sepolia.
+2. Press `1` on the keyboard (or click `Dump 15%`). One tx fires `setPrice` on the on-chain oracle.
+3. The chart's vanilla line drops; the Atlas line stays flat. Sticky stats bar flips green showing the Atlas LP outperformed.
+4. Within ~15-20 seconds the Reactive event feed adds a new row: the cross-chain callback from Lasna landed and the hook's `lastNonce` ticked. The full loop is observable on-chain.
+
+**Pool chain**: Unichain Sepolia (chain 1301) · **Reactive chain**: Reactive Lasna (chain 5318007)
 
 ### Verified contracts (Unichain Sepolia)
 
@@ -25,6 +35,12 @@ Atlas is a Uniswap v4 hook that pairs every LP deposit with an automatic, autono
 
 - AtlasReactive: [0xA9797768554213476B0D1E853cf9b91E7A187BF1](https://lasna.reactscan.net/address/0xA9797768554213476B0D1E853cf9b91E7A187BF1)
 - End-to-end latency observed: ~15-20 seconds from Unichain `setPrice` event to `hook.lastNonce` tick.
+
+### Chainlink ETH/USD adapter (Sepolia)
+
+- ChainlinkOracleAdapter: [0xFd7E6Abe3347A5bC1b24C4ACbcF271Db946683f5](https://sepolia.etherscan.io/address/0xFd7E6Abe3347A5bC1b24C4ACbcF271Db946683f5#code)
+- Wraps Chainlink's ETH/USD feed (`0x694AA1769357215DE4FAC081bf1f309aDC325306`) with staleness check and 1e18 normalization.
+- Live read at deploy time returned $1779.83. Implements the same `IPriceOracle` interface as `MockPriceOracle`, so swapping in production is a constructor-arg change.
 
 ---
 

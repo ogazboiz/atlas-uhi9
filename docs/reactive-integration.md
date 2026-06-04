@@ -12,9 +12,14 @@ This document is for judges, auditors, and contributors who want to verify the i
 | AtlasCallback (sink) | Unichain Sepolia (1301) | `0x725Fdf9116cd7083D7287B49f7dBB8FF7c11266D` | [uniscan](https://sepolia.uniscan.xyz/address/0x725Fdf9116cd7083D7287B49f7dBB8FF7c11266D#code) |
 | AtlasHook (target) | Unichain Sepolia (1301) | `0xb0a98b7301772DC8328e3b8B08436C5E993d4640` | [uniscan](https://sepolia.uniscan.xyz/address/0xb0a98b7301772DC8328e3b8B08436C5E993d4640#code) |
 | MockPriceOracle (origin) | Unichain Sepolia (1301) | `0x686502d452F3F47fD804fbdec778Dcd4cA7971Ff` | [uniscan](https://sepolia.uniscan.xyz/address/0x686502d452F3F47fD804fbdec778Dcd4cA7971Ff#code) |
+| ChainlinkOracleAdapter (production-ready) | Ethereum Sepolia (11155111) | `0xFd7E6Abe3347A5bC1b24C4ACbcF271Db946683f5` | [etherscan](https://sepolia.etherscan.io/address/0xFd7E6Abe3347A5bC1b24C4ACbcF271Db946683f5#code) |
 | Reactive callback proxy | Unichain Sepolia (1301) | `0x9299472A6399Fd1027ebF067571Eb3e3D7837FC4` | (Reactive Network official) |
 
 All contracts on Unichain Sepolia are source-verified on Uniscan via Etherscan V2 multichain API.
+
+### Why the second oracle
+
+`MockPriceOracle` lets us trigger price moves on demand for the demo (the trigger button on `/compare` calls `setPrice`). `ChainlinkOracleAdapter` is the production drop-in: same `IPriceOracle` interface, but reads the live Chainlink ETH/USD feed on Sepolia and rejects stale data. A production redeploy swaps the constructor arg in `Deploy.s.sol` and the RSC subscribes to Chainlink's `AnswerUpdated` topic instead of our mock's `PriceUpdated`. No hook or vault changes needed.
 
 ## Subscriptions
 

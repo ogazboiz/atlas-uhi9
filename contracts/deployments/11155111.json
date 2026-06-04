@@ -1,0 +1,8 @@
+{
+  "network": "Ethereum Sepolia",
+  "chainId": 11155111,
+  "chainlinkOracleAdapter": "0xFd7E6Abe3347A5bC1b24C4ACbcF271Db946683f5",
+  "chainlinkEthUsdFeed": "0x694AA1769357215DE4FAC081bf1f309aDC325306",
+  "maxStalenessSeconds": 3600,
+  "note": "Production-ready oracle adapter wrapping the live Chainlink ETH/USD feed. Same IPriceOracle interface as MockPriceOracle on Unichain Sepolia."
+}
