@@ -9,6 +9,7 @@ import {ATLAS} from "@/lib/contracts";
 import {MOCK_ORACLE_ABI} from "@/lib/abis";
 import {PriceChart, type ChartPoint} from "@/components/PriceChart";
 import {ReactiveStatus} from "@/components/ReactiveStatus";
+import {ReactiveEventFeed} from "@/components/ReactiveEventFeed";
 
 /// Initial LP composition for the chart: 1 ETH + 3500 USDC.
 /// Vanilla value = ETH_qty * price + USDC_qty; Atlas value stays flat (delta-neutral).
@@ -132,6 +133,7 @@ export default function ComparePage() {
                 />
 
                 <ReactiveStatus />
+                <ReactiveEventFeed />
             </main>
             <Footer />
         </div>
