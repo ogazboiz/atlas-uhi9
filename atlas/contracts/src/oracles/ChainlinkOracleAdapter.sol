@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
+import {IPriceOracle} from "./IPriceOracle.sol";
+
 /// @notice Minimal Chainlink AggregatorV3 interface needed by Atlas.
 interface IAggregatorV3 {
     function latestRoundData()
@@ -12,20 +14,23 @@ interface IAggregatorV3 {
 }
 
 /// @title ChainlinkOracleAdapter
-/// @notice Wraps a Chainlink price feed with staleness checks and decimal normalization.
-/// @dev Reverts on stale data. Designed to be the single source of truth for price reads
-///      across AtlasHook, MockPerpAdapter, and AtlasReactive.
-contract ChainlinkOracleAdapter {
+/// @notice Wraps a Chainlink price feed with staleness checks and 1e18 decimal normalization.
+/// @dev Reverts on stale or non-positive answers. Designed to be the single source of truth
+///      for price reads across AtlasHook, MockPerpAdapter, and AtlasReactive.
+contract ChainlinkOracleAdapter is IPriceOracle {
     // ============ IMMUTABLES ============
 
     /// @dev The underlying Chainlink aggregator.
-    IAggregatorV3 public immutable feed;
+    IAggregatorV3 public immutable FEED;
 
     /// @dev Maximum age of a price update before it is considered stale (seconds).
-    uint256 public immutable maxStaleness;
+    uint256 public immutable MAX_STALENESS;
 
     /// @dev Decimals exposed by the feed (e.g., 8 for ETH/USD on Sepolia).
-    uint8 public immutable feedDecimals;
+    uint8 public immutable FEED_DECIMALS;
+
+    /// @dev Target internal scale.
+    uint256 internal constant TARGET_SCALE = 1e18;
 
     // ============ ERRORS ============
 
@@ -35,21 +40,42 @@ contract ChainlinkOracleAdapter {
     // ============ CONSTRUCTOR ============
 
     constructor(address _feed, uint256 _maxStaleness) {
-        feed = IAggregatorV3(_feed);
-        maxStaleness = _maxStaleness;
-        feedDecimals = IAggregatorV3(_feed).decimals();
+        FEED = IAggregatorV3(_feed);
+        MAX_STALENESS = _maxStaleness;
+        FEED_DECIMALS = IAggregatorV3(_feed).decimals();
     }
 
     // ============ EXTERNAL VIEWS ============
 
-    /// @notice Returns the latest price scaled to 1e18.
-    /// @dev Reverts if the price is stale or non-positive.
+    /// @inheritdoc IPriceOracle
     function getPrice() external view returns (uint256) {
-        // TODO: pull latestRoundData, enforce staleness, scale to 1e18, return
+        (uint256 price,) = _readAndScale();
+        return price;
     }
 
     /// @notice Returns the latest price along with its timestamp.
     function getPriceWithTimestamp() external view returns (uint256 price, uint256 updatedAt) {
-        // TODO: same as getPrice but also returns the updatedAt
+        return _readAndScale();
+    }
+
+    // ============ INTERNAL ============
+
+    function _readAndScale() internal view returns (uint256 scaledPrice, uint256 updatedAt) {
+        (, int256 answer,, uint256 _updatedAt,) = FEED.latestRoundData();
+
+        if (answer <= 0) revert InvalidPrice(answer);
+        if (block.timestamp - _updatedAt > MAX_STALENESS) {
+            revert StalePrice(_updatedAt, block.timestamp);
+        }
+
+        // Scale to 1e18 regardless of source decimals.
+        if (FEED_DECIMALS < 18) {
+            scaledPrice = uint256(answer) * 10 ** (18 - FEED_DECIMALS);
+        } else if (FEED_DECIMALS > 18) {
+            scaledPrice = uint256(answer) / 10 ** (FEED_DECIMALS - 18);
+        } else {
+            scaledPrice = uint256(answer);
+        }
+        updatedAt = _updatedAt;
     }
 }
