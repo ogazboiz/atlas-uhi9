@@ -16,6 +16,7 @@ Atlas turns volatile Uniswap LP positions into fixed-rate income. Every deposit 
 | Positions page (your aLP shares + on-chain deposit history) | https://atlas-uhi9-u148.vercel.app/positions |
 | Activity page (unified vault + hook + reactive event timeline) | https://atlas-uhi9-u148.vercel.app/activity |
 | Reactive integration deep-dive | [docs/reactive-integration.md](docs/reactive-integration.md) |
+| AI layer deep-dive | [docs/ai-layer.md](docs/ai-layer.md) |
 
 **60-second demo path:**
 1. Open `/compare`. Connect any wallet on Unichain Sepolia.
@@ -43,6 +44,34 @@ Atlas turns volatile Uniswap LP positions into fixed-rate income. Every deposit 
 - ChainlinkOracleAdapter: [0xFd7E6Abe3347A5bC1b24C4ACbcF271Db946683f5](https://sepolia.etherscan.io/address/0xFd7E6Abe3347A5bC1b24C4ACbcF271Db946683f5#code)
 - Wraps Chainlink's ETH/USD feed (`0x694AA1769357215DE4FAC081bf1f309aDC325306`) with staleness check and 1e18 normalization.
 - Live read at deploy time returned $1779.83. Implements the same `IPriceOracle` interface as `MockPriceOracle`, so swapping in production is a constructor-arg change.
+
+### AI layer
+
+Atlas ships two AI components, both grounded in real on-chain reads.
+
+**Hedge Confidence Score** (visible on `/compare`)
+- Composite scorer that fuses four on-chain signals into a single 0-100 number:
+  rolling oracle-price volatility (0.30 weight), blocks since the last RSC
+  callback (0.25), vault buffer health (0.25), and signed funding rate (0.20).
+- Implemented as a transparent weighted ensemble in
+  [frontend/lib/confidence.ts](frontend/lib/confidence.ts). Adopted from the
+  winning pattern in SwapPilot's `ai-engine` (PyTorch transformer + RF ensemble)
+  but simplified for a fully auditable TypeScript implementation.
+- Rendered as a semicircle gauge with per-component breakdown bars in
+  [HedgeConfidenceGauge.tsx](frontend/components/HedgeConfidenceGauge.tsx).
+- Trigger volatility on `/compare`, watch the confidence tier flip from HIGH to
+  MEDIUM, then back to HIGH after the next Reactive callback freshens the signal.
+
+**Ask Atlas chat** (visible on `/positions` and `/activity`)
+- Edge-runtime API route at
+  [app/api/atlas-chat/route.ts](frontend/app/api/atlas-chat/route.ts) streaming
+  Claude Haiku 4.5 via Vercel AI Gateway.
+- Every request injects a per-page Context block containing live on-chain
+  reads (aLP balance, claim value, accrued yield, deposit history, recent
+  events). System prompt forbids inventing numbers — every figure cited must
+  come from that context.
+- Built on `@ai-sdk/react useChat` with a custom `DefaultChatTransport` so the
+  on-chain context flows on every turn, not just the first one.
 
 ### Test coverage
 
