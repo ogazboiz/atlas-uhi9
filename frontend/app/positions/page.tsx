@@ -7,6 +7,7 @@ import {useAccount, usePublicClient, useReadContract} from "wagmi";
 import {parseAbiItem} from "viem";
 import {ATLAS} from "@/lib/contracts";
 import {ATLAS_VAULT_ABI, ERC20_ABI} from "@/lib/abis";
+import {AtlasChat} from "@/components/AtlasChat";
 
 const DEPOSIT_EVENT = parseAbiItem(
     "event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares)",
@@ -125,6 +126,23 @@ export default function PositionsPage() {
                             usdcBalance={(usdcBalance as bigint) ?? 0n}
                         />
                         <DepositHistory deposits={deposits} />
+                        <div className="mt-6">
+                            <AtlasChat
+                                title="Ask Atlas about your position"
+                                context={{
+                                    page: "/positions",
+                                    walletAddress: address,
+                                    aLpShares: (aLpBalance as bigint | undefined)?.toString() ?? "0",
+                                    claimValueUsdc1e18: claim.toString(),
+                                    totalDepositedUsdc1e18: totalDeposited.toString(),
+                                    accruedYieldUsdc1e18: yieldAmount.toString(),
+                                    currentCouponBps: couponBps !== undefined ? (couponBps as bigint).toString() : "unknown",
+                                    walletUsdc1e18: ((usdcBalance as bigint | undefined) ?? 0n).toString(),
+                                    depositCount: deposits.length,
+                                }}
+                                opener="Hi. I can answer questions about your Atlas position using only the live on-chain reads above. Try: 'Is my position earning?' or 'What is the buffer health right now?'"
+                            />
+                        </div>
                     </>
                 )}
 

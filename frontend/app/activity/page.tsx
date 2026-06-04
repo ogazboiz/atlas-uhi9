@@ -6,6 +6,7 @@ import {ConnectButton} from "@rainbow-me/rainbowkit";
 import {usePublicClient} from "wagmi";
 import {parseAbiItem} from "viem";
 import {ATLAS} from "@/lib/contracts";
+import {AtlasChat} from "@/components/AtlasChat";
 
 type ActivityKind = "Deposit" | "Withdraw" | "FeesDeposited" | "HedgeOpened" | "HedgeResized" | "HedgeClosed" | "RebalanceCallback";
 
@@ -157,6 +158,25 @@ export default function ActivityPage() {
                         Unified timeline of every on-chain event from the vault and the hook. Pulled from the live
                         contracts on Unichain Sepolia. Reactive callbacks from Lasna land here as Rebalance entries.
                     </p>
+                </div>
+
+                <div className="mb-6">
+                    <AtlasChat
+                        title="Ask Atlas about recent activity"
+                        context={{
+                            page: "/activity",
+                            recentEvents: events.slice(0, 20).map((e) => ({
+                                kind: e.kind,
+                                blockNumber: e.blockNumber.toString(),
+                                timestamp: e.timestamp,
+                                primary: e.primary,
+                                secondary: e.secondary,
+                                txHash: e.txHash,
+                            })),
+                            totalEventCount: events.length,
+                        }}
+                        opener="I can summarise the recent activity on this page and answer questions about specific events. Try: 'How many reactive callbacks landed today?' or 'Show me the last deposit.'"
+                    />
                 </div>
 
                 <section className="border border-zinc-900 rounded-xl p-2 sm:p-4 bg-zinc-950">
