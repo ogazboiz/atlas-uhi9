@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {ConnectButton} from "@rainbow-me/rainbowkit";
 import {ATLAS} from "@/lib/contracts";
+import {LiveStats} from "@/components/LiveStats";
 
 const EXPLORER = "https://sepolia.uniscan.xyz/address";
 
@@ -12,7 +13,7 @@ export default function Home() {
             <Header />
             <main className="flex flex-1 flex-col items-center px-6 py-20 max-w-5xl mx-auto w-full">
                 <Hero />
-                <TrustSignals />
+                <LiveStats />
                 <HowItWorks />
                 <CTASection />
             </main>
@@ -46,37 +47,6 @@ function Hero() {
                 Atlas is a Uniswap v4 hook that pairs every LP deposit with a delta-matched perpetual short,
                 paying out a flat 8% APR while a Reactive Smart Contract handles rebalancing across chains.
             </p>
-        </section>
-    );
-}
-
-function TrustSignals() {
-    const cards = [
-        {
-            label: "Live on",
-            value: "Unichain Sepolia",
-            sub: "Chain 1301",
-        },
-        {
-            label: "Target coupon",
-            value: "8.00% APR",
-            sub: "Smoothed per-block",
-        },
-        {
-            label: "Tests passing",
-            value: "61 / 61",
-            sub: "Foundry",
-        },
-    ];
-    return (
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-3xl mt-16">
-            {cards.map((c) => (
-                <div key={c.label} className="border border-zinc-900 rounded-lg p-6 text-center">
-                    <div className="text-xs uppercase tracking-widest text-zinc-500 mb-2">{c.label}</div>
-                    <div className="text-2xl font-semibold mb-1">{c.value}</div>
-                    <div className="text-xs text-zinc-500">{c.sub}</div>
-                </div>
-            ))}
         </section>
     );
 }

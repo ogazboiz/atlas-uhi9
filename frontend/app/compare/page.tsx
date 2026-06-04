@@ -28,7 +28,7 @@ export default function ComparePage() {
         address: ATLAS.oracle,
         abi: MOCK_ORACLE_ABI,
         functionName: "getPrice",
-        query: {refetchInterval: 4000},
+        query: {refetchInterval: 1500},
     });
 
     const currentPrice = useMemo(() => {
@@ -91,6 +91,21 @@ export default function ComparePage() {
         if (!txMining && pendingTx && busy) setBusy(false);
     }, [txMining, pendingTx, busy]);
 
+    // Keyboard shortcuts: 1=Dump 15%, 2=Dump 5%, 3=Pump 5%, 4=Pump 15%.
+    useEffect(() => {
+        function handle(e: KeyboardEvent) {
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+            const map: Record<string, number> = {"1": -15, "2": -5, "3": 5, "4": 15};
+            const pct = map[e.key];
+            if (pct !== undefined) {
+                e.preventDefault();
+                triggerVolatility(pct);
+            }
+        }
+        window.addEventListener("keydown", handle);
+        return () => window.removeEventListener("keydown", handle);
+    }, [triggerVolatility]);
+
     const vanillaValue = currentPrice !== null ? ETH_QTY * currentPrice + USDC_QTY : null;
     const drawdown = vanillaValue !== null ? ((vanillaValue - ATLAS_FLAT_VALUE) / ATLAS_FLAT_VALUE) * 100 : null;
 
@@ -110,12 +125,14 @@ export default function ComparePage() {
                     </p>
                 </div>
 
-                <StatsBar
-                    currentPrice={currentPrice}
-                    vanillaValue={vanillaValue}
-                    atlasValue={ATLAS_FLAT_VALUE}
-                    drawdownPct={drawdown}
-                />
+                <div className="sticky top-0 z-10 -mx-6 px-6 py-3 bg-black/80 backdrop-blur-md border-b border-zinc-900">
+                    <StatsBar
+                        currentPrice={currentPrice}
+                        vanillaValue={vanillaValue}
+                        atlasValue={ATLAS_FLAT_VALUE}
+                        drawdownPct={drawdown}
+                    />
+                </div>
 
                 <section className="border border-zinc-900 rounded-xl p-6 mt-6 bg-zinc-950">
                     <PriceChart data={points} />
@@ -224,11 +241,11 @@ function TriggerPanel({
     isConnected: boolean;
     currentPrice: number | null;
 }) {
-    const buttons: {pct: number; label: string; tone: "danger" | "muted" | "accent"}[] = [
-        {pct: -15, label: "Dump 15%", tone: "danger"},
-        {pct: -5, label: "Dump 5%", tone: "muted"},
-        {pct: 5, label: "Pump 5%", tone: "muted"},
-        {pct: 15, label: "Pump 15%", tone: "accent"},
+    const buttons: {pct: number; label: string; hint: string; tone: "danger" | "muted" | "accent"}[] = [
+        {pct: -15, label: "Dump 15%", hint: "1", tone: "danger"},
+        {pct: -5, label: "Dump 5%", hint: "2", tone: "muted"},
+        {pct: 5, label: "Pump 5%", hint: "3", tone: "muted"},
+        {pct: 15, label: "Pump 15%", hint: "4", tone: "accent"},
     ];
 
     return (
@@ -250,7 +267,7 @@ function TriggerPanel({
                         disabled={!isConnected || busy || currentPrice === null}
                         onClick={() => onTrigger(b.pct)}
                         className={`
-                            rounded-lg py-3 text-sm font-medium border transition-colors
+                            relative rounded-lg py-3 text-sm font-medium border transition-colors
                             disabled:opacity-40 disabled:cursor-not-allowed
                             ${
                                 b.tone === "danger"
@@ -262,10 +279,23 @@ function TriggerPanel({
                         `}
                     >
                         {b.label}
+                        <kbd className="absolute top-1 right-2 text-[10px] text-zinc-500 font-mono">{b.hint}</kbd>
                     </button>
                 ))}
             </div>
-            {busy && <p className="text-xs text-zinc-500 mt-3">Waiting for tx confirmation...</p>}
+            <p className="text-xs text-zinc-500 mt-3">
+                {busy ? (
+                    <>Waiting for tx confirmation...</>
+                ) : (
+                    <>
+                        Tip: press <kbd className="px-1 py-0.5 rounded bg-zinc-900 text-zinc-300 font-mono">1</kbd>{" "}
+                        <kbd className="px-1 py-0.5 rounded bg-zinc-900 text-zinc-300 font-mono">2</kbd>{" "}
+                        <kbd className="px-1 py-0.5 rounded bg-zinc-900 text-zinc-300 font-mono">3</kbd>{" "}
+                        <kbd className="px-1 py-0.5 rounded bg-zinc-900 text-zinc-300 font-mono">4</kbd> to trigger
+                        without leaving the keyboard.
+                    </>
+                )}
+            </p>
         </section>
     );
 }
