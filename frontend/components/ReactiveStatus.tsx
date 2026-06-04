@@ -34,9 +34,11 @@ export function ReactiveStatus() {
             <p className="text-sm text-zinc-500 mb-5">
                 The AtlasReactive RSC on Reactive Lasna subscribes to{" "}
                 <code className="text-zinc-300">MockPriceOracle.PriceUpdated</code> on Unichain Sepolia and
-                forwards a hedge-rebalance callback through AtlasCallback. The hook&apos;s{" "}
+                forwards a hedge-rebalance callback through AtlasCallback. The subscription is verifiable on
+                Lasna via{" "}
+                <code className="text-zinc-300">rnk_getFilters</code>. The hook&apos;s{" "}
                 <code className="text-zinc-300">lastNonce</code> below increments each time the cross-chain
-                callback lands.
+                callback lands; live propagation latency on Lasna testnet varies.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
