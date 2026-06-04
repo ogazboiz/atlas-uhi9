@@ -248,11 +248,11 @@ When a choice trades long-term sophistication for short-term velocity, that's th
   - Block merge if tests fail
 
 ### Monorepo or polyrepo?
-- **Polyrepo** — three repos:
-  1. `atlas-contracts` (Foundry)
-  2. `atlas-frontend` (Next.js)
-  3. `atlas-indexer` (Ponder)
-- Reason: separate CI pipelines, separate deployment cadences, no monorepo tooling learning curve
+- **Monorepo** under `atlas/` with three sibling app folders:
+  1. `contracts/` (Foundry)
+  2. `frontend/` (Next.js)
+  3. `indexer/` (Ponder)
+- Reason: single source of truth, shared `.env` and config patterns, atomic commits across layers, easier hackathon judging.
 
 ---
 
@@ -303,15 +303,16 @@ Same as above, plus:
 
 ---
 
-## Repository Structure (per repo)
+## Repository Structure
 
-### `atlas-contracts/`
+The monorepo lives under `atlas/` inside the parent submissions repo.
+
+### `atlas/contracts/`
 ```
-atlas-contracts/
+contracts/
 ├── src/
 │   ├── AtlasHook.sol
 │   ├── AtlasVault.sol
-│   ├── aLP.sol
 │   ├── adapters/
 │   │   ├── IPerpAdapter.sol
 │   │   ├── MockPerpAdapter.sol
@@ -333,9 +334,9 @@ atlas-contracts/
 └── README.md
 ```
 
-### `atlas-frontend/`
+### `atlas/frontend/` (planned)
 ```
-atlas-frontend/
+frontend/
 ├── app/
 │   ├── page.tsx
 │   ├── deposit/
@@ -356,9 +357,9 @@ atlas-frontend/
 └── README.md
 ```
 
-### `atlas-indexer/`
+### `atlas/indexer/` (planned)
 ```
-atlas-indexer/
+indexer/
 ├── ponder.config.ts
 ├── ponder.schema.ts
 ├── src/

@@ -1,18 +1,24 @@
 # Foundry
-atlas-contracts/cache/
-atlas-contracts/out/
-atlas-contracts/broadcast/
+atlas/contracts/cache/
+atlas/contracts/out/
+atlas/contracts/broadcast/
 
 # Forge dependencies (reinstall via `forge install` after clone)
-atlas-contracts/lib/
+atlas/contracts/lib/
+
+# Frontend (future)
+atlas/frontend/node_modules/
+atlas/frontend/.next/
+atlas/frontend/.turbo/
+
+# Indexer (future)
+atlas/indexer/node_modules/
+atlas/indexer/.ponder/
 
 # Environment
 .env
 .env.local
 *.env
-
-# Dependencies
-node_modules/
 
 # IDE
 .vscode/
@@ -24,4 +30,4 @@ node_modules/
 Thumbs.db
 
 # Build / deploy artifacts (keep only committed deployments json)
-atlas-contracts/deployments/*/latest.json
+atlas/contracts/deployments/*/latest.json
