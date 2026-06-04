@@ -1,14 +1,15 @@
 {
-  "callback": "0x3d35ba0Bd93231cCa2B29eAe3461f03c3adE3BFB",
+  "callback": "0x725Fdf9116cd7083D7287B49f7dBB8FF7c11266D",
   "callbackProxy": "0x9299472A6399Fd1027ebF067571Eb3e3D7837FC4",
-  "reactive": "0x9A8629e7D3FcCDbC4d1DE24d43013452cfF23cF0",
+  "reactive": "0xA9797768554213476B0D1E853cf9b91E7A187BF1",
   "reactiveChainId": 5318007,
   "reactiveSubscribed": true,
   "reactiveRpc": "https://lasna-rpc.rnk.dev/",
   "reactScanUrl": "https://lasna.reactscan.net",
-  "poolId": "0xed78b4fbdc483220ba4daef7fdd972fdae8a1a06690c5090d6e92a27ccfc2598",
+  "poolId": "0x48856097ba659752848795efaa9b943b1fa79484bb65b0e840e11742f4986283",
   "subscribedTopic": "0x945c1c4e99aa89f648fbfe3df471b916f719e16d960fcec0737d4d56bd696838",
   "subscribedEvent": "PriceUpdated(uint256,uint256)",
-  "subscribedContract": "0xd14F55BC9BFcEaDFF0d4A3C25bda54C7d56A1b89",
-  "note": "AtlasReactive deployed, subscribed, and funded with 0.5 lREACT. Subscription registered on system contract. Cross-chain event propagation from Unichain Sepolia is operational at the contract layer; observed live latency varies on Lasna testnet."
+  "subscribedContract": "0x686502d452F3F47fD804fbdec778Dcd4cA7971Ff",
+  "live": true,
+  "verifiedFirstCallback": "hook.lastNonce == 1 after first setPrice (~15s latency)"
 }

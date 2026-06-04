@@ -10,9 +10,21 @@ Atlas is a Uniswap v4 hook that pairs every LP deposit with an automatic, autono
 
 - **Demo**: https://atlas-uhi9-u148.vercel.app
 - **Comparison chart**: https://atlas-uhi9-u148.vercel.app/compare
-- **Network**: Unichain Sepolia (chain 1301)
-- **Hook**: [0x6eA1Ad75D4904069523d29BA7d77C398262b4640](https://sepolia.uniscan.xyz/address/0x6eA1Ad75D4904069523d29BA7d77C398262b4640)
-- **Vault**: [0x2d04a51EE6a19772691675205274B8516F2C5941](https://sepolia.uniscan.xyz/address/0x2d04a51EE6a19772691675205274B8516F2C5941)
+- **Pool chain**: Unichain Sepolia (chain 1301)
+- **Reactive chain**: Lasna testnet (chain 5318007)
+
+### Verified contracts (Unichain Sepolia)
+
+- Hook: [0xb0a98b7301772DC8328e3b8B08436C5E993d4640](https://sepolia.uniscan.xyz/address/0xb0a98b7301772DC8328e3b8B08436C5E993d4640#code)
+- Vault: [0xC86b482A6F30f8B149a98Fa5B2b2a0a026cbcC9b](https://sepolia.uniscan.xyz/address/0xC86b482A6F30f8B149a98Fa5B2b2a0a026cbcC9b#code)
+- Oracle: [0x686502d452F3F47fD804fbdec778Dcd4cA7971Ff](https://sepolia.uniscan.xyz/address/0x686502d452F3F47fD804fbdec778Dcd4cA7971Ff#code)
+- PerpAdapter: [0xcaC535eef5BfdC09fB1a53086551aE5d1b90a4Af](https://sepolia.uniscan.xyz/address/0xcaC535eef5BfdC09fB1a53086551aE5d1b90a4Af#code)
+- AtlasCallback: [0x725Fdf9116cd7083D7287B49f7dBB8FF7c11266D](https://sepolia.uniscan.xyz/address/0x725Fdf9116cd7083D7287B49f7dBB8FF7c11266D#code)
+
+### Reactive Smart Contract (Lasna)
+
+- AtlasReactive: [0xA9797768554213476B0D1E853cf9b91E7A187BF1](https://lasna.reactscan.net/address/0xA9797768554213476B0D1E853cf9b91E7A187BF1)
+- End-to-end latency observed: ~15-20 seconds from Unichain `setPrice` event to `hook.lastNonce` tick.
 
 ---
 
