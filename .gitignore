@@ -1,19 +1,19 @@
 # Foundry
-atlas/contracts/cache/
-atlas/contracts/out/
-atlas/contracts/broadcast/
+contracts/cache/
+contracts/out/
+contracts/broadcast/
 
 # Forge dependencies (reinstall via `forge install` after clone)
-atlas/contracts/lib/
+contracts/lib/
 
 # Frontend (future)
-atlas/frontend/node_modules/
-atlas/frontend/.next/
-atlas/frontend/.turbo/
+frontend/node_modules/
+frontend/.next/
+frontend/.turbo/
 
 # Indexer (future)
-atlas/indexer/node_modules/
-atlas/indexer/.ponder/
+indexer/node_modules/
+indexer/.ponder/
 
 # Environment
 .env
@@ -30,4 +30,4 @@ atlas/indexer/.ponder/
 Thumbs.db
 
 # Build / deploy artifacts (keep only committed deployments json)
-atlas/contracts/deployments/*/latest.json
+contracts/deployments/*/latest.json
