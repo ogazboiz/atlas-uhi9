@@ -1,0 +1,27 @@
+# Foundry
+atlas-contracts/cache/
+atlas-contracts/out/
+atlas-contracts/broadcast/
+
+# Forge dependencies (reinstall via `forge install` after clone)
+atlas-contracts/lib/
+
+# Environment
+.env
+.env.local
+*.env
+
+# Dependencies
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build / deploy artifacts (keep only committed deployments json)
+atlas-contracts/deployments/*/latest.json
