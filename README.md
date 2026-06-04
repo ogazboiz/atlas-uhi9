@@ -13,6 +13,8 @@ Atlas turns volatile Uniswap LP positions into fixed-rate income. Every deposit 
 | **Live demo** | https://atlas-uhi9-u148.vercel.app |
 | Comparison chart (Atlas vs Vanilla LP, with on-chain trigger button) | https://atlas-uhi9-u148.vercel.app/compare |
 | Deposit page (mint test USDC, deposit into the live vault) | https://atlas-uhi9-u148.vercel.app/deposit |
+| Positions page (your aLP shares + on-chain deposit history) | https://atlas-uhi9-u148.vercel.app/positions |
+| Activity page (unified vault + hook + reactive event timeline) | https://atlas-uhi9-u148.vercel.app/activity |
 | Reactive integration deep-dive | [docs/reactive-integration.md](docs/reactive-integration.md) |
 
 **60-second demo path:**
@@ -41,6 +43,30 @@ Atlas turns volatile Uniswap LP positions into fixed-rate income. Every deposit 
 - ChainlinkOracleAdapter: [0xFd7E6Abe3347A5bC1b24C4ACbcF271Db946683f5](https://sepolia.etherscan.io/address/0xFd7E6Abe3347A5bC1b24C4ACbcF271Db946683f5#code)
 - Wraps Chainlink's ETH/USD feed (`0x694AA1769357215DE4FAC081bf1f309aDC325306`) with staleness check and 1e18 normalization.
 - Live read at deploy time returned $1779.83. Implements the same `IPriceOracle` interface as `MockPriceOracle`, so swapping in production is a constructor-arg change.
+
+### Test coverage
+
+Measured by `forge coverage` on the contracts repo. Every PRD target is met or exceeded.
+
+| Contract | Lines | Branches | Functions |
+|---|---|---|---|
+| `src/AtlasHook.sol` | 92.31% | 77.78% | 83.33% |
+| `src/AtlasVault.sol` | 97.40% | 94.12% | 92.31% |
+| `src/adapters/MockPerpAdapter.sol` | 80.46% | 70.59% | 75.00% |
+| `src/mocks/MockPriceOracle.sol` | 100.00% | n/a | 100.00% |
+
+The PRD target was 80%+ on hook and vault and 50%+ on the perp adapter. The reactive contracts (`AtlasCallback`, `AtlasReactive`, `ChainlinkOracleAdapter`) are covered by end-to-end testnet verification (hook `lastNonce` ticking proves the full loop), not by Foundry unit tests.
+
+### Two distinct user flows
+
+Atlas has two independent entry points for liquidity:
+
+| Flow | UI | What happens |
+|---|---|---|
+| **Vault deposit** | [/deposit](https://atlas-uhi9-u148.vercel.app/deposit) | User deposits USDC into the ERC-4626 vault, receives `aLP` shares. Earns the flat per-block coupon. Buffer is funded from hook fee inflows. **No perp hedge opens.** |
+| **Pool LP add** | (via Uniswap v4 PositionManager) | Liquidity provider adds WETH/USDC to the v4 pool. The Atlas hook intercepts `afterAddLiquidity`, computes the volatile-asset delta, and opens a matched perp short. **Hedge unwinds in `beforeRemoveLiquidity`.** |
+
+The frontend demos both: `/compare` simulates the LP hedge value, `/deposit` mints real `aLP` shares against the live vault.
 
 ---
 

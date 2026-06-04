@@ -35,6 +35,12 @@ function Header() {
                 <Link href="/deposit" className="text-sm text-zinc-400 hover:text-white hidden sm:inline">
                     Deposit
                 </Link>
+                <Link href="/positions" className="text-sm text-zinc-400 hover:text-white hidden sm:inline">
+                    Positions
+                </Link>
+                <Link href="/activity" className="text-sm text-zinc-400 hover:text-white hidden sm:inline">
+                    Activity
+                </Link>
                 <ConnectButton showBalance={false} chainStatus="icon" />
             </div>
         </header>
