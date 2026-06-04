@@ -17,23 +17,7 @@ import {HookMiner} from "@uniswap/v4-periphery/test/shared/HookMiner.sol";
 import {AtlasHook} from "../src/AtlasHook.sol";
 import {AtlasVault} from "../src/AtlasVault.sol";
 import {MockPerpAdapter} from "../src/adapters/MockPerpAdapter.sol";
-import {IPriceOracle} from "../src/oracles/IPriceOracle.sol";
-
-contract MockPriceOracle is IPriceOracle {
-    uint256 public price;
-
-    constructor(uint256 _p) {
-        price = _p;
-    }
-
-    function setPrice(uint256 _p) external {
-        price = _p;
-    }
-
-    function getPrice() external view returns (uint256) {
-        return price;
-    }
-}
+import {MockPriceOracle} from "../src/mocks/MockPriceOracle.sol";
 
 /// @title AtlasHookTest
 /// @notice Unit tests for AtlasHook callbacks.

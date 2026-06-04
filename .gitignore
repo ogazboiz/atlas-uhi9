@@ -29,5 +29,6 @@ indexer/.ponder/
 .DS_Store
 Thumbs.db
 
-# Build / deploy artifacts (keep only committed deployments json)
+# Build / deploy artifacts (keep committed testnet deployments, drop local anvil)
+contracts/deployments/31337.json
 contracts/deployments/*/latest.json

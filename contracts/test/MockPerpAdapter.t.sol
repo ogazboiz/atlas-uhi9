@@ -3,24 +3,7 @@ pragma solidity 0.8.26;
 
 import {Test, console2} from "forge-std/Test.sol";
 import {MockPerpAdapter} from "../src/adapters/MockPerpAdapter.sol";
-import {IPriceOracle} from "../src/oracles/IPriceOracle.sol";
-
-/// @dev Settable mock for unit tests; not part of production contracts.
-contract MockPriceOracle is IPriceOracle {
-    uint256 public price;
-
-    constructor(uint256 _initialPrice) {
-        price = _initialPrice;
-    }
-
-    function setPrice(uint256 _price) external {
-        price = _price;
-    }
-
-    function getPrice() external view returns (uint256) {
-        return price;
-    }
-}
+import {MockPriceOracle} from "../src/mocks/MockPriceOracle.sol";
 
 contract MockPerpAdapterTest is Test {
     MockPerpAdapter adapter;
