@@ -17,7 +17,8 @@ remappings = [
     "v4-periphery/=lib/v4-periphery/src/",
     "uniswap-hooks/=lib/uniswap-hooks/src/",
     "solmate/=lib/v4-core/lib/solmate/src/",
-    "permit2/=lib/v4-periphery/lib/permit2/src/"
+    "permit2/=lib/v4-periphery/lib/permit2/src/",
+    "reactive-lib/=lib/reactive-lib/src/"
 ]
 
 [fmt]

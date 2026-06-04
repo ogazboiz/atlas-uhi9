@@ -1,0 +1,9 @@
+{
+  "callback": "0x3d35ba0Bd93231cCa2B29eAe3461f03c3adE3BFB",
+  "callbackProxy": "0x9299472A6399Fd1027ebF067571Eb3e3D7837FC4",
+  "reactive": "0xa80149A736fe7DD65e2183D866F9563C26aC7D04",
+  "reactiveChainId": 5318007,
+  "reactiveSubscribed": false,
+  "poolId": "0xed78b4fbdc483220ba4daef7fdd972fdae8a1a06690c5090d6e92a27ccfc2598",
+  "note": "Phase 2 deploy complete; initSubscriptions pending. Top up reactive address with REACT via the Lasna faucet then call initSubscriptions()."
+}

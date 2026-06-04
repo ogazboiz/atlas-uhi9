@@ -229,28 +229,43 @@ contract AtlasHook is BaseHook, ReentrancyGuard {
 
     // ============ REACTIVE CALLBACK ============
 
-    /// @notice Receives a cross-chain rebalance signal from AtlasReactive on Reactive Network.
-    /// @dev Validates origin, nonce monotonicity, and deadline. Caps the delta to 20% of
-    ///      current hedge size to bound damage from a compromised RSC.
+    /// @notice Struct-arg entrypoint kept for tests and direct off-chain callers.
+    /// @dev Production RSC callbacks come through `rebalanceFromReactive` (primitive args).
     function rebalanceCallback(RebalanceCallback calldata data) external nonReentrant {
-        if (msg.sender != reactiveCallback) revert NotReactiveCallback();
-        if (data.nonce <= lastNonce) revert NonceUsed(data.nonce);
-        if (block.timestamp > data.deadline) revert CallbackExpired(data.deadline);
-        lastNonce = data.nonce;
+        _processRebalance(data.poolId, data.deltaSize, data.nonce, data.deadline);
+    }
 
-        PoolHedge storage hedge = poolHedges[data.poolId];
-        if (!hedge.open || data.deltaSize == 0) {
-            emit RebalanceCallbackReceived(data.poolId, 0, data.nonce);
+    /// @notice Primitive-arg entrypoint called by AtlasCallback after a Reactive Network
+    ///         callback proxy invocation. Same auth + idempotency rules as the struct path.
+    /// @dev Pattern adopted from PerpHinge / vfa-hooks: callback contracts pass primitives,
+    ///      not encoded structs, to keep RVM payload encoding simple.
+    function rebalanceFromReactive(bytes32 poolId, int256 deltaSize, uint256 nonce, uint256 deadline)
+        external
+        nonReentrant
+    {
+        _processRebalance(poolId, deltaSize, nonce, deadline);
+    }
+
+    /// @dev Core rebalance logic shared by both external entrypoints.
+    function _processRebalance(bytes32 poolId, int256 deltaSize, uint256 nonce, uint256 deadline) internal {
+        if (msg.sender != reactiveCallback) revert NotReactiveCallback();
+        if (nonce <= lastNonce) revert NonceUsed(nonce);
+        if (block.timestamp > deadline) revert CallbackExpired(deadline);
+        lastNonce = nonce;
+
+        PoolHedge storage hedge = poolHedges[poolId];
+        if (!hedge.open || deltaSize == 0) {
+            emit RebalanceCallbackReceived(poolId, 0, nonce);
             return;
         }
 
         uint256 cap = hedge.totalHedgeSize * REBALANCE_CAP_BPS / BPS_DENOMINATOR;
         if (cap == 0) cap = 1;
-        int256 applied = data.deltaSize;
+        int256 applied = deltaSize;
         uint256 absDelta = applied >= 0 ? uint256(applied) : uint256(-applied);
         if (absDelta > cap) {
             applied = applied >= 0 ? int256(cap) : -int256(cap);
-            emit RebalanceCapped(data.poolId, data.deltaSize, applied);
+            emit RebalanceCapped(poolId, deltaSize, applied);
         }
 
         if (applied > 0) {
@@ -267,7 +282,7 @@ contract AtlasHook is BaseHook, ReentrancyGuard {
         }
         hedge.lastRebalanceBlock = block.number;
 
-        emit RebalanceCallbackReceived(data.poolId, applied, data.nonce);
+        emit RebalanceCallbackReceived(poolId, applied, nonce);
     }
 
     // ============ ADMIN ============
