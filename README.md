@@ -6,6 +6,14 @@ Atlas is a Uniswap v4 hook that pairs every LP deposit with an automatic, autono
 
 > Submission for the **UHI9 Hookathon** — Track: *Impermanent Loss & Yield Systems* — Sponsor: *Reactive Network*
 
+## Live
+
+- **Demo**: https://atlas-uhi9-u148.vercel.app
+- **Comparison chart**: https://atlas-uhi9-u148.vercel.app/compare
+- **Network**: Unichain Sepolia (chain 1301)
+- **Hook**: [0x6eA1Ad75D4904069523d29BA7d77C398262b4640](https://sepolia.uniscan.xyz/address/0x6eA1Ad75D4904069523d29BA7d77C398262b4640)
+- **Vault**: [0x2d04a51EE6a19772691675205274B8516F2C5941](https://sepolia.uniscan.xyz/address/0x2d04a51EE6a19772691675205274B8516F2C5941)
+
 ---
 
 ## Why Atlas
