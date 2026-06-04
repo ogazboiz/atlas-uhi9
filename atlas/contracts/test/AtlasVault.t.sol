@@ -19,7 +19,8 @@ contract AtlasVaultTest is Test {
 
     function setUp() public {
         asset = new ERC20Mock();
-        vault = new AtlasVault(asset, HOOK, TARGET_COUPON, MAX_COUPON);
+        vault = new AtlasVault(asset, TARGET_COUPON, MAX_COUPON);
+        vault.setHook(HOOK);
 
         asset.mint(ALICE, 100_000e18);
         asset.mint(BOB, 100_000e18);
@@ -36,7 +37,7 @@ contract AtlasVaultTest is Test {
     // ============ initialization ============
 
     function test_Constructor_SetsImmutables() public view {
-        assertEq(vault.HOOK(), HOOK);
+        assertEq(vault.hook(), HOOK);
         assertEq(vault.TARGET_COUPON_BPS(), TARGET_COUPON);
         assertEq(vault.MAX_COUPON_BPS(), MAX_COUPON);
         assertEq(vault.couponBps(), TARGET_COUPON);
@@ -46,7 +47,21 @@ contract AtlasVaultTest is Test {
 
     function test_Constructor_RevertsIfInitialAboveMax() public {
         vm.expectRevert(AtlasVault.InitialCouponAboveMax.selector);
-        new AtlasVault(asset, HOOK, MAX_COUPON + 1, MAX_COUPON);
+        new AtlasVault(asset, MAX_COUPON + 1, MAX_COUPON);
+    }
+
+    function test_SetHook_OnlyOnce() public {
+        AtlasVault v = new AtlasVault(asset, TARGET_COUPON, MAX_COUPON);
+        v.setHook(HOOK);
+        vm.expectRevert(AtlasVault.HookAlreadySet.selector);
+        v.setHook(BOB);
+    }
+
+    function test_SetHook_OnlyAdmin() public {
+        AtlasVault v = new AtlasVault(asset, TARGET_COUPON, MAX_COUPON);
+        vm.prank(ALICE);
+        vm.expectRevert(AtlasVault.NotAdmin.selector);
+        v.setHook(HOOK);
     }
 
     // ============ deposit / withdraw ============

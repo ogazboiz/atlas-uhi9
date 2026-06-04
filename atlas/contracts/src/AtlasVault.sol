@@ -45,14 +45,18 @@ contract AtlasVault is ERC4626, ReentrancyGuard {
 
     // ============ STORAGE ============
 
-    /// @dev The hook contract authorized to deposit fees + funding via depositFromHook.
-    address public immutable HOOK;
+    /// @dev Admin set at construction; can set hook address one time post-deploy.
+    address public immutable ADMIN;
 
     /// @dev Initial / target coupon rate. Coupon may be temporarily halved below this.
     uint256 public immutable TARGET_COUPON_BPS;
 
     /// @dev Hard cap on coupon to prevent runaway buffer drain.
     uint256 public immutable MAX_COUPON_BPS;
+
+    /// @dev The hook contract authorized to deposit fees + funding via depositFromHook.
+    /// @dev Settable once by the admin to resolve the hook<->vault address chicken-and-egg.
+    address public hook;
 
     /// @dev Current coupon rate in basis points (e.g., 800 = 8% APR).
     uint256 public couponBps;
@@ -74,6 +78,7 @@ contract AtlasVault is ERC4626, ReentrancyGuard {
     event BufferLow(uint256 healthBps);
     event BufferRestored(uint256 healthBps);
     event FeesDeposited(uint256 amount);
+    event HookSet(address hook);
 
     // ============ ERRORS ============
 
@@ -81,15 +86,18 @@ contract AtlasVault is ERC4626, ReentrancyGuard {
     error NotHook();
     error CouponAboveMax();
     error InitialCouponAboveMax();
+    error NotAdmin();
+    error HookAlreadySet();
+    error HookNotSet();
 
     // ============ CONSTRUCTOR ============
 
-    constructor(IERC20 asset_, address hook_, uint256 initialCouponBps, uint256 maxCouponBps_)
+    constructor(IERC20 asset_, uint256 initialCouponBps, uint256 maxCouponBps_)
         ERC4626(asset_)
         ERC20("Atlas LP - WETH/USDC", "aLP-WETH-USDC")
     {
         if (initialCouponBps > maxCouponBps_) revert InitialCouponAboveMax();
-        HOOK = hook_;
+        ADMIN = msg.sender;
         TARGET_COUPON_BPS = initialCouponBps;
         MAX_COUPON_BPS = maxCouponBps_;
         couponBps = initialCouponBps;
@@ -99,8 +107,18 @@ contract AtlasVault is ERC4626, ReentrancyGuard {
     // ============ MODIFIERS ============
 
     modifier onlyHook() {
-        if (msg.sender != HOOK) revert NotHook();
+        if (msg.sender != hook) revert NotHook();
         _;
+    }
+
+    // ============ ADMIN ============
+
+    /// @notice One-time hook address binding. Required before depositFromHook works.
+    function setHook(address _hook) external {
+        if (msg.sender != ADMIN) revert NotAdmin();
+        if (hook != address(0)) revert HookAlreadySet();
+        hook = _hook;
+        emit HookSet(_hook);
     }
 
     // ============ HOOK CASHFLOW ============

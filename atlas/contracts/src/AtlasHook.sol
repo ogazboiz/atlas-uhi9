@@ -6,89 +6,114 @@ import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
-import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
-import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "@uniswap/v4-core/src/types/BeforeSwapDelta.sol";
+import {BalanceDelta, BalanceDeltaLibrary, toBalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 import {SwapParams, ModifyLiquidityParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
+import {AtlasVault} from "./AtlasVault.sol";
 import {IPerpAdapter} from "./adapters/IPerpAdapter.sol";
 
 /// @title AtlasHook
-/// @notice Uniswap v4 hook that pairs every LP position with a matched perpetual short,
-///         providing delta-neutral exposure with smoothed yield.
-/// @dev Cross-chain rebalance triggers arrive via `rebalanceCallback`, fired by AtlasReactive
-///      on Reactive Network. See ../architecture.md section 4.2 for the full sequence diagram.
+/// @notice Uniswap v4 hook that pairs LP liquidity with an aggregate per-pool perpetual
+///         short, providing delta-neutral exposure with smoothed yield.
+/// @dev MODEL: One aggregate hedge per pool. Each LP records a per-position contribution
+///      used to unwind their share of the hedge on withdrawal. RSC callbacks operate on
+///      the aggregate hedge, not on individual LPs.
+///
+///      VOLATILE CURRENCY: Constructor takes a flag to handle either token ordering.
+///      The flag picks whether to read amount0 or amount1 from BalanceDelta.
+///
+///      FEE CAPTURE: For MVP we expose `notifyFees(amount)` as an admin shim to deposit
+///      fee revenue into the vault. Production uses afterSwapReturnDelta to extract
+///      fees directly. See ../feature-breakdown.md F2/F6.
+///
+///      Sequence diagrams in ../architecture.md sections 4.1, 4.2, 4.4.
 contract AtlasHook is BaseHook, ReentrancyGuard {
+    using BalanceDeltaLibrary for BalanceDelta;
     using PoolIdLibrary for PoolKey;
+
+    // ============ CONSTANTS ============
+
+    uint256 public constant REBALANCE_CAP_BPS = 2_000; // 20% per single callback
+    uint256 public constant BPS_DENOMINATOR = 10_000;
 
     // ============ STRUCTS ============
 
-    /// @dev Per-LP-position state. Indexed by keccak(owner, poolId, tickLower, tickUpper).
-    struct AtlasPosition {
-        address owner;
-        uint256 liquidity;
-        int24 tickLower;
-        int24 tickUpper;
+    struct PoolHedge {
         bytes32 perpPositionId;
-        uint256 hedgeSize;
+        uint256 totalHedgeSize;
         uint256 lastRebalanceBlock;
         bool open;
     }
 
-    /// @dev Anti-replay payload from AtlasReactive RSC.
-    struct RebalanceCallbackData {
-        PoolId poolId;
+    struct RebalanceCallback {
+        bytes32 poolId;
         int256 deltaSize;
         uint256 nonce;
         uint256 deadline;
     }
 
+    // ============ IMMUTABLES ============
+
+    AtlasVault public immutable VAULT;
+    IPerpAdapter public immutable PERP_ADAPTER;
+    /// @dev True if currency0 of the pool is the volatile asset to hedge.
+    bool public immutable VOLATILE_IS_CURRENCY0;
+    address public immutable ADMIN;
+
     // ============ STORAGE ============
 
-    /// @dev positionKey => AtlasPosition
-    mapping(bytes32 => AtlasPosition) public positions;
-
-    /// @dev Authenticated RSC address allowed to call rebalanceCallback.
+    /// @dev Authenticated RSC address allowed to call rebalanceCallback. Set post-deploy.
     address public reactiveCallback;
-
-    /// @dev The smoothing vault collecting fees and funding income.
-    address public vault;
-
-    /// @dev The perp adapter used to manage hedge legs.
-    IPerpAdapter public perpAdapter;
 
     /// @dev Last consumed nonce from RSC (monotonically increasing).
     uint256 public lastNonce;
 
-    /// @dev Maximum rebalance delta per callback, in basis points of position size (e.g., 2000 = 20%).
-    uint256 public rebalanceCapBps;
+    /// @dev poolId => aggregate hedge state.
+    mapping(bytes32 => PoolHedge) public poolHedges;
+
+    /// @dev keccak(lp, poolId, tickLower, tickUpper) => the LP's contribution to the hedge.
+    mapping(bytes32 => uint256) public lpContributions;
 
     // ============ EVENTS ============
 
-    event HedgeOpened(bytes32 indexed positionKey, uint256 size, bytes32 perpPositionId);
-    event HedgeResized(bytes32 indexed positionKey, int256 delta, uint256 newSize);
-    event HedgeClosed(bytes32 indexed positionKey, int256 finalPnl);
-    event RebalanceCallback(PoolId indexed poolId, int256 delta, uint256 nonce);
-    event RebalanceCapped(PoolId indexed poolId, int256 requested, int256 applied);
-    event RebalanceFailed(PoolId indexed poolId, string reason);
+    event HedgeOpened(bytes32 indexed poolId, bytes32 perpPositionId, uint256 size);
+    event HedgeResized(bytes32 indexed poolId, int256 delta, uint256 newTotalSize);
+    event HedgeClosed(bytes32 indexed poolId, int256 finalPnL);
+    event LPContributionAdded(bytes32 indexed positionKey, uint256 amount);
+    event LPContributionUnwound(bytes32 indexed positionKey, uint256 amount);
+    event RebalanceCallbackReceived(bytes32 indexed poolId, int256 appliedDelta, uint256 nonce);
+    event RebalanceCapped(bytes32 indexed poolId, int256 requested, int256 applied);
+    event ReactiveCallbackUpdated(address oldAddr, address newAddr);
+    event FeesNotified(bytes32 indexed poolId, uint256 amount);
 
     // ============ ERRORS ============
 
     error NotReactiveCallback();
     error NonceUsed(uint256 nonce);
     error CallbackExpired(uint256 deadline);
-    error HedgeOpenFailed();
-    error HedgeCloseFailed();
+    error NotAdmin();
 
     // ============ CONSTRUCTOR ============
 
-    constructor(IPoolManager _poolManager, address _vault, IPerpAdapter _perpAdapter, address _reactiveCallback)
-        BaseHook(_poolManager)
-    {
-        vault = _vault;
-        perpAdapter = _perpAdapter;
-        reactiveCallback = _reactiveCallback;
-        rebalanceCapBps = 2000; // 20% per call
+    constructor(
+        IPoolManager _poolManager,
+        AtlasVault _vault,
+        IPerpAdapter _perpAdapter,
+        bool _volatileIsCurrency0,
+        address _admin
+    ) BaseHook(_poolManager) {
+        VAULT = _vault;
+        PERP_ADAPTER = _perpAdapter;
+        VOLATILE_IS_CURRENCY0 = _volatileIsCurrency0;
+        ADMIN = _admin;
+    }
+
+    // ============ MODIFIERS ============
+
+    modifier onlyAdmin() {
+        if (msg.sender != ADMIN) revert NotAdmin();
+        _;
     }
 
     // ============ HOOK PERMISSIONS ============
@@ -98,10 +123,10 @@ contract AtlasHook is BaseHook, ReentrancyGuard {
         return Hooks.Permissions({
             beforeInitialize: false,
             afterInitialize: false,
-            beforeAddLiquidity: true,
+            beforeAddLiquidity: false,
             afterAddLiquidity: true,
             beforeRemoveLiquidity: true,
-            afterRemoveLiquidity: true,
+            afterRemoveLiquidity: false,
             beforeSwap: false,
             afterSwap: true,
             beforeDonate: false,
@@ -115,61 +140,155 @@ contract AtlasHook is BaseHook, ReentrancyGuard {
 
     // ============ HOOK CALLBACKS ============
 
-    /// @dev Called after liquidity is added. Computes delta and opens matched perp short.
+    /// @dev On liquidity add, open or grow the pool's aggregate perp short.
     function _afterAddLiquidity(
         address sender,
         PoolKey calldata key,
         ModifyLiquidityParams calldata params,
         BalanceDelta delta,
-        BalanceDelta feesAccrued,
-        bytes calldata hookData
+        BalanceDelta, // feesAccrued — not consumed in MVP
+        bytes calldata
     ) internal override returns (bytes4, BalanceDelta) {
-        // TODO: compute hedge size from liquidity + ticks + current price
-        // TODO: call perpAdapter.openShort(hedgeSize)
-        // TODO: store AtlasPosition
-        // TODO: emit HedgeOpened
+        int256 volAmount = int256(VOLATILE_IS_CURRENCY0 ? delta.amount0() : delta.amount1());
+        if (volAmount >= 0) {
+            return (this.afterAddLiquidity.selector, toBalanceDelta(0, 0));
+        }
+        uint256 hedgeSize = uint256(-volAmount);
+        if (hedgeSize == 0) {
+            return (this.afterAddLiquidity.selector, toBalanceDelta(0, 0));
+        }
+
+        bytes32 poolId = PoolId.unwrap(key.toId());
+        PoolHedge storage hedge = poolHedges[poolId];
+
+        if (hedge.open) {
+            PERP_ADAPTER.resizeShort(hedge.perpPositionId, int256(hedgeSize));
+            hedge.totalHedgeSize += hedgeSize;
+            emit HedgeResized(poolId, int256(hedgeSize), hedge.totalHedgeSize);
+        } else {
+            bytes32 perpId = PERP_ADAPTER.openShort(hedgeSize);
+            hedge.perpPositionId = perpId;
+            hedge.totalHedgeSize = hedgeSize;
+            hedge.lastRebalanceBlock = block.number;
+            hedge.open = true;
+            emit HedgeOpened(poolId, perpId, hedgeSize);
+        }
+
+        bytes32 positionKey = _positionKey(sender, poolId, params.tickLower, params.tickUpper);
+        lpContributions[positionKey] += hedgeSize;
+        emit LPContributionAdded(positionKey, hedgeSize);
+
+        return (this.afterAddLiquidity.selector, toBalanceDelta(0, 0));
     }
 
-    /// @dev Called before liquidity is removed. Closes proportional hedge.
+    /// @dev On liquidity remove, unwind the LP's contribution to the aggregate hedge.
+    ///      MVP behavior: full-unwind of the LP's tracked contribution. Partial unwinds
+    ///      proportional to liquidity removed are a post-MVP refinement.
     function _beforeRemoveLiquidity(
         address sender,
         PoolKey calldata key,
         ModifyLiquidityParams calldata params,
-        bytes calldata hookData
+        bytes calldata
     ) internal override returns (bytes4) {
-        // TODO: load AtlasPosition, compute proportional hedge to close
-        // TODO: call perpAdapter.resizeShort or closeShort
-        // TODO: forward PnL to vault
-        // TODO: emit HedgeClosed
+        bytes32 poolId = PoolId.unwrap(key.toId());
+        bytes32 positionKey = _positionKey(sender, poolId, params.tickLower, params.tickUpper);
+
+        uint256 contribution = lpContributions[positionKey];
+        if (contribution == 0) return this.beforeRemoveLiquidity.selector;
+
+        PoolHedge storage hedge = poolHedges[poolId];
+        if (!hedge.open) return this.beforeRemoveLiquidity.selector;
+
+        if (contribution >= hedge.totalHedgeSize) {
+            int256 pnl = PERP_ADAPTER.closeShort(hedge.perpPositionId);
+            hedge.totalHedgeSize = 0;
+            hedge.open = false;
+            emit HedgeClosed(poolId, pnl);
+        } else {
+            PERP_ADAPTER.resizeShort(hedge.perpPositionId, -int256(contribution));
+            hedge.totalHedgeSize -= contribution;
+            emit HedgeResized(poolId, -int256(contribution), hedge.totalHedgeSize);
+        }
+
+        lpContributions[positionKey] = 0;
+        emit LPContributionUnwound(positionKey, contribution);
+        return this.beforeRemoveLiquidity.selector;
     }
 
-    /// @dev Called after each swap. Routes accrued fees to vault.
+    /// @dev afterSwap is wired but MVP only emits an observability hook.
+    ///      Production routes captured fees via afterSwapReturnDelta into the vault.
     function _afterSwap(
-        address sender,
-        PoolKey calldata key,
-        SwapParams calldata params,
-        BalanceDelta delta,
-        bytes calldata hookData
+        address,
+        PoolKey calldata,
+        SwapParams calldata,
+        BalanceDelta,
+        bytes calldata
     ) internal override returns (bytes4, int128) {
-        // TODO: read fees collected, route to vault.depositFromHook
+        return (this.afterSwap.selector, int128(0));
     }
 
     // ============ REACTIVE CALLBACK ============
 
-    /// @notice Called by AtlasReactive RSC to trigger a hedge rebalance.
-    /// @dev Restricted to the registered RSC address. Verifies nonce monotonicity and deadline.
-    function rebalanceCallback(RebalanceCallbackData calldata data) external nonReentrant {
+    /// @notice Receives a cross-chain rebalance signal from AtlasReactive on Reactive Network.
+    /// @dev Validates origin, nonce monotonicity, and deadline. Caps the delta to 20% of
+    ///      current hedge size to bound damage from a compromised RSC.
+    function rebalanceCallback(RebalanceCallback calldata data) external nonReentrant {
         if (msg.sender != reactiveCallback) revert NotReactiveCallback();
         if (data.nonce <= lastNonce) revert NonceUsed(data.nonce);
         if (block.timestamp > data.deadline) revert CallbackExpired(data.deadline);
         lastNonce = data.nonce;
-        // TODO: cap delta, resize hedge via perpAdapter, emit RebalanceCallback
+
+        PoolHedge storage hedge = poolHedges[data.poolId];
+        if (!hedge.open || data.deltaSize == 0) {
+            emit RebalanceCallbackReceived(data.poolId, 0, data.nonce);
+            return;
+        }
+
+        uint256 cap = hedge.totalHedgeSize * REBALANCE_CAP_BPS / BPS_DENOMINATOR;
+        if (cap == 0) cap = 1;
+        int256 applied = data.deltaSize;
+        uint256 absDelta = applied >= 0 ? uint256(applied) : uint256(-applied);
+        if (absDelta > cap) {
+            applied = applied >= 0 ? int256(cap) : -int256(cap);
+            emit RebalanceCapped(data.poolId, data.deltaSize, applied);
+        }
+
+        if (applied > 0) {
+            PERP_ADAPTER.resizeShort(hedge.perpPositionId, applied);
+            hedge.totalHedgeSize += uint256(applied);
+        } else {
+            uint256 reduction = uint256(-applied);
+            if (reduction >= hedge.totalHedgeSize) {
+                reduction = hedge.totalHedgeSize - 1;
+                applied = -int256(reduction);
+            }
+            PERP_ADAPTER.resizeShort(hedge.perpPositionId, -int256(reduction));
+            hedge.totalHedgeSize -= reduction;
+        }
+        hedge.lastRebalanceBlock = block.number;
+
+        emit RebalanceCallbackReceived(data.poolId, applied, data.nonce);
     }
 
-    // ============ VIEWS ============
+    // ============ ADMIN ============
 
-    /// @notice Returns the current hedge status for a given position key.
-    function getHedgeStatus(bytes32 positionKey) external view returns (AtlasPosition memory) {
-        return positions[positionKey];
+    /// @notice Sets / rotates the address authorized to call rebalanceCallback.
+    function setReactiveCallback(address _new) external onlyAdmin {
+        emit ReactiveCallbackUpdated(reactiveCallback, _new);
+        reactiveCallback = _new;
+    }
+
+    /// @notice Demo-only: route fee revenue into the vault.
+    /// @dev Admin must approve vault to pull `amount` of the underlying first. Production
+    ///      replaces this path with afterSwapReturnDelta extraction.
+    function notifyFees(bytes32 poolId, uint256 amount) external onlyAdmin {
+        VAULT.depositFromHook(amount);
+        emit FeesNotified(poolId, amount);
+    }
+
+    // ============ INTERNAL ============
+
+    function _positionKey(address lp, bytes32 poolId, int24 lower, int24 upper) internal pure returns (bytes32) {
+        return keccak256(abi.encode(lp, poolId, lower, upper));
     }
 }
