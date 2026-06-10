@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@ai-sdk/google": "^3.0.80",
     "@ai-sdk/react": "^3.0.198",
     "@rainbow-me/rainbowkit": "^2.2.11",
     "@tanstack/react-query": "^5.101.0",

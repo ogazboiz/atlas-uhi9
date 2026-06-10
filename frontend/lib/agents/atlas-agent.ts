@@ -7,12 +7,20 @@
 /// receiving chunks from the last index it saw.
 
 import {DurableAgent} from "@workflow/ai/agent";
+import {createGoogleGenerativeAI} from "@ai-sdk/google";
 import {getWritable} from "workflow";
 import {z} from "zod";
 import type {ModelMessage} from "ai";
 import type {UIMessageChunk} from "ai";
 
 import {readOraclePrice, readRecentCallbacks, readUserPosition, readVaultState} from "./atlas-tools";
+
+/// Direct Gemini provider so we don't depend on Vercel AI Gateway credits
+/// (Gateway requires a credit card on file before serving requests). Wired
+/// against GEMINI_API_KEY in the project env.
+const google = createGoogleGenerativeAI({
+    apiKey: process.env.GEMINI_API_KEY,
+});
 
 const SYSTEM_PROMPT = `You are "Ask Atlas", an assistant embedded in the Atlas dApp.
 
@@ -43,7 +51,7 @@ export async function atlasChatWorkflow(messages: ModelMessage[], userAddress: s
     const writable = getWritable<UIMessageChunk>();
 
     const agent = new DurableAgent({
-        model: "anthropic/claude-haiku-4.5",
+        model: async () => google("gemini-2.5-flash"),
         system: `${SYSTEM_PROMPT}\n\nUSER CONTEXT:\n- Wallet connected: ${userAddress ?? "(no wallet connected)"}\n- When the user asks about "my position", call read_user_position with their wallet.`,
         temperature: 0.2,
         tools: {
