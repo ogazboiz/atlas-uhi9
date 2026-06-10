@@ -42,7 +42,6 @@ const VAULT_ABI = parseAbi([
 ]);
 
 export async function readVaultState() {
-    "use step";
     const client = getClient();
     const [totalAssets, couponBps, bufferHealth, paused] = await Promise.all([
         client.readContract({address: ATLAS.vault, abi: VAULT_ABI, functionName: "totalAssets"}),
@@ -72,7 +71,6 @@ const VAULT_USER_ABI = parseAbi([
 const ERC20_ABI = parseAbi(["function balanceOf(address) view returns (uint256)"]);
 
 export async function readUserPosition({address}: {address: string}) {
-    "use step";
     const client = getClient();
     const addr = address as `0x${string}`;
     const [aLpBalance, usdcBalance] = await Promise.all([
@@ -103,7 +101,6 @@ export async function readUserPosition({address}: {address: string}) {
 const ORACLE_ABI = parseAbi(["function getPrice() view returns (uint256)"]);
 
 export async function readOraclePrice() {
-    "use step";
     const client = getClient();
     const price = await client.readContract({address: ATLAS.oracle, abi: ORACLE_ABI, functionName: "getPrice"});
     return {
@@ -122,7 +119,6 @@ const REBALANCE_EVENT = parseAbiItem(
 );
 
 export async function readRecentCallbacks({limit}: {limit: number}) {
-    "use step";
     const client = getClient();
     const lastNonce = await client.readContract({
         address: ATLAS.hook,

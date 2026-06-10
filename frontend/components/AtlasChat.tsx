@@ -1,87 +1,40 @@
 "use client";
 
-import {useEffect, useMemo, useState, type FormEvent} from "react";
+import {useMemo, useState, type FormEvent} from "react";
 import {useAccount} from "wagmi";
 import {useChat} from "@ai-sdk/react";
-import {WorkflowChatTransport} from "@workflow/ai";
+import {DefaultChatTransport} from "ai";
 
 export type AtlasChatContext = Record<string, unknown>;
 
 interface AtlasChatProps {
-    /// Optional structured context the page passes in. Kept for backwards
-    /// compatibility with callers that still want to inject extra state,
-    /// but the DurableAgent backend now mostly relies on its tools, not
-    /// the static context block.
     context?: AtlasChatContext;
-    /// Title rendered in the chat header.
     title?: string;
-    /// Optional opener message rendered as the first assistant turn.
     opener?: string;
 }
 
-const RUN_ID_KEY = "atlas-chat-active-run-id";
-
-/// Embeddable chat panel powered by a DurableAgent workflow.
+/// Embeddable chat panel.
 ///
-/// Differences vs the previous streamText-only implementation:
-/// - Each turn is durable. Server timeouts or page refreshes do not lose
-///   the in-flight response; WorkflowChatTransport reconnects to the same
-///   workflow run and resumes from the last received chunk.
-/// - The agent calls four on-chain tools to fetch fresh state per turn
-///   instead of trusting a static context block from the client.
+/// The backend at /api/atlas-chat streams Gemini 2.5 Flash via
+/// @ai-sdk/google with four on-chain reader tools. Every numeric answer
+/// comes from a fresh contract read, not from the model's priors.
 export function AtlasChat({context, title = "Ask Atlas", opener}: AtlasChatProps) {
     const {address} = useAccount();
     const [input, setInput] = useState("");
 
-    // Check for an active workflow run on mount so the chat picks up an
-    // in-flight stream if the user refreshed mid-response.
-    const initialActiveRunId = useMemo(() => {
-        if (typeof window === "undefined") return undefined;
-        return localStorage.getItem(RUN_ID_KEY) ?? undefined;
-    }, []);
-
     const transport = useMemo(
         () =>
-            new WorkflowChatTransport({
+            new DefaultChatTransport({
                 api: "/api/atlas-chat",
                 prepareSendMessagesRequest: ({messages}) => ({
                     body: {messages, userAddress: address ?? null, context: context ?? null},
                 }),
-                onChatSendMessage: (response: Response) => {
-                    const runId = response.headers.get("x-workflow-run-id");
-                    if (runId && typeof window !== "undefined") {
-                        localStorage.setItem(RUN_ID_KEY, runId);
-                    }
-                },
-                onChatEnd: () => {
-                    if (typeof window !== "undefined") localStorage.removeItem(RUN_ID_KEY);
-                },
-                prepareReconnectToStreamRequest: ({api, ...rest}) => {
-                    const runId = typeof window !== "undefined" ? localStorage.getItem(RUN_ID_KEY) : null;
-                    if (!runId) throw new Error("No active workflow run ID found.");
-                    return {
-                        ...rest,
-                        api: `${api}/${encodeURIComponent(runId)}/stream`,
-                    };
-                },
             }),
         [address, context],
     );
 
-    const {messages, sendMessage, status, error} = useChat({
-        transport,
-        resume: Boolean(initialActiveRunId),
-    });
+    const {messages, sendMessage, status, error} = useChat({transport});
     const busy = status === "submitted" || status === "streaming";
-
-    // Drop a stale active runId if the chat completes naturally so subsequent
-    // turns start fresh.
-    useEffect(() => {
-        if (!busy && messages.length > 0 && typeof window !== "undefined") {
-            const last = messages[messages.length - 1];
-            if (last.role === "assistant") localStorage.removeItem(RUN_ID_KEY);
-        }
-    }, [busy, messages]);
 
     function handleSubmit(e: FormEvent) {
         e.preventDefault();
@@ -99,7 +52,7 @@ export function AtlasChat({context, title = "Ask Atlas", opener}: AtlasChatProps
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-50" />
                         <span className="relative inline-flex h-2 w-2 rounded-full bg-violet-400" />
                     </span>
-                    Durable Agent · Claude Haiku · 4 on-chain tools
+                    Gemini 2.5 · 4 on-chain tools
                 </span>
             </div>
 
@@ -110,8 +63,7 @@ export function AtlasChat({context, title = "Ask Atlas", opener}: AtlasChatProps
                 ))}
                 {error && (
                     <div className="text-xs text-rose-400 px-3 py-2 border border-rose-900 rounded bg-rose-950/30">
-                        {error.message ||
-                            "Chat failed. Enable Vercel Workflow + AI Gateway, or set AI_GATEWAY_API_KEY locally."}
+                        {error.message || "Chat failed. Check GEMINI_API_KEY in Vercel env."}
                     </div>
                 )}
             </div>
@@ -134,7 +86,7 @@ export function AtlasChat({context, title = "Ask Atlas", opener}: AtlasChatProps
             </form>
 
             <p className="text-[10px] text-zinc-600 mt-2">
-                Each answer can call four durable tools that read live state directly from the deployed
+                Each answer can call four tools that read live state directly from the deployed
                 contracts. Numbers come from on-chain reads, not the model&apos;s priors.
             </p>
         </section>
