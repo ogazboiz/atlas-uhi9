@@ -8,7 +8,7 @@ A composite scorer that fuses four on-chain signals into a single 0-100 number r
 
 ### Inspiration
 
-The pattern follows [SwapPilot's `ai-engine`](https://github.com/your-link-to-swappilot), the only Uniswap Hookathon winner to ship a real AI component. SwapPilot trained a PyTorch transformer + Random Forest ensemble to score swap-execution timing, rendered as a single gauge in the UI. We adapted this pattern to hedge sizing instead of swap timing, with a transparent JavaScript ensemble in place of a trained net.
+The pattern follows SwapPilot's `ai-engine`, a prior Uniswap Hookathon winner that shipped a real ML component: a PyTorch transformer plus Random Forest ensemble that scored swap-execution timing and surfaced the result as a single gauge in the UI. We adapted this pattern to hedge sizing instead of swap timing, with a transparent JavaScript ensemble in place of a trained net.
 
 ### Why a weighted ensemble instead of a trained network
 
