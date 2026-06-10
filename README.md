@@ -30,7 +30,7 @@ Atlas turns volatile Uniswap LP positions into fixed-rate income. Every deposit 
 
 - Hook: [0xb0a98b7301772DC8328e3b8B08436C5E993d4640](https://sepolia.uniscan.xyz/address/0xb0a98b7301772DC8328e3b8B08436C5E993d4640#code)
 - Vault: [0xC86b482A6F30f8B149a98Fa5B2b2a0a026cbcC9b](https://sepolia.uniscan.xyz/address/0xC86b482A6F30f8B149a98Fa5B2b2a0a026cbcC9b#code)
-- Oracle: [0x686502d452F3F47fD804fbdec778Dcd4cA7971Ff](https://sepolia.uniscan.xyz/address/0x686502d452F3F47fD804fbdec778Dcd4cA7971Ff#code)
+- MockPriceOracle (demo): [0x686502d452F3F47fD804fbdec778Dcd4cA7971Ff](https://sepolia.uniscan.xyz/address/0x686502d452F3F47fD804fbdec778Dcd4cA7971Ff#code)
 - PerpAdapter: [0xcaC535eef5BfdC09fB1a53086551aE5d1b90a4Af](https://sepolia.uniscan.xyz/address/0xcaC535eef5BfdC09fB1a53086551aE5d1b90a4Af#code)
 - AtlasCallback: [0x725Fdf9116cd7083D7287B49f7dBB8FF7c11266D](https://sepolia.uniscan.xyz/address/0x725Fdf9116cd7083D7287B49f7dBB8FF7c11266D#code)
 
@@ -154,6 +154,7 @@ forge install Uniswap/v4-core --no-commit
 forge install Uniswap/v4-periphery --no-commit
 forge install OpenZeppelin/openzeppelin-contracts --no-commit
 forge install OpenZeppelin/uniswap-hooks --no-commit
+forge install Reactive-Network/reactive-lib --no-commit
 
 # Set env vars
 cp .env.example .env
