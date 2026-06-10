@@ -62,16 +62,19 @@ Atlas ships two AI components, both grounded in real on-chain reads.
 - Trigger volatility on `/compare`, watch the confidence tier flip from HIGH to
   MEDIUM, then back to HIGH after the next Reactive callback freshens the signal.
 
-**Ask Atlas chat** (visible on `/positions` and `/activity`)
-- Edge-runtime API route at
-  [app/api/atlas-chat/route.ts](frontend/app/api/atlas-chat/route.ts) streaming
-  Claude Haiku 4.5 via Vercel AI Gateway.
-- Every request injects a per-page Context block containing live on-chain
-  reads (aLP balance, claim value, accrued yield, deposit history, recent
-  events). System prompt forbids inventing numbers — every figure cited must
-  come from that context.
-- Built on `@ai-sdk/react useChat` with a custom `DefaultChatTransport` so the
-  on-chain context flows on every turn, not just the first one.
+**Ask Atlas Durable Agent** (visible on `/positions` and `/activity`)
+- Vercel Workflow DevKit `DurableAgent` ([frontend/lib/agents/atlas-agent.ts](frontend/lib/agents/atlas-agent.ts))
+  running Claude Haiku 4.5 via AI Gateway.
+- Four tools as `"use step"` functions in
+  [atlas-tools.ts](frontend/lib/agents/atlas-tools.ts): `read_vault_state`,
+  `read_user_position`, `read_oracle_price`, `read_recent_callbacks`. Each
+  one is a durable, retryable, cached on-chain read.
+- POST `/api/atlas-chat` starts the workflow and returns
+  `x-workflow-run-id`. GET `/api/atlas-chat/[runId]/stream` resumes the
+  same run if the function times out or the browser refreshes mid-stream.
+- Client uses `WorkflowChatTransport` with `localStorage`-persisted run IDs,
+  so an answer interrupted by a refresh picks up at the last received chunk
+  instead of starting over.
 
 ### Test coverage
 

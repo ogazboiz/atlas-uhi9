@@ -37,17 +37,40 @@ Final score = weighted sum. Tier mapping: ≥75 HIGH (emerald), ≥50 MEDIUM (am
 3. Volatility component drops sharply, tier flips to MEDIUM within 3 seconds
 4. ~15-20 seconds later the Reactive Network callback lands, the freshness component resets to 100, and the gauge ticks back up
 
-## 2. Ask Atlas
+## 2. Ask Atlas (Durable Agent)
 
-A natural-language chat embedded on `/positions` and `/activity` that answers user questions using live on-chain reads.
+A natural-language chat embedded on `/positions` and `/activity`. Backed by a Vercel Workflow DevKit `DurableAgent` that calls four on-chain reader tools per turn, so every answer cites live contract state rather than a stale context blob.
 
 ### Implementation
 
 | Layer | File | Detail |
 |---|---|---|
-| API | [frontend/app/api/atlas-chat/route.ts](../frontend/app/api/atlas-chat/route.ts) | Edge runtime, `streamText` from `ai` package |
-| Model | `anthropic/claude-haiku-4.5` via Vercel AI Gateway | Routed through Gateway so the deployment uses OIDC, no hard-coded key |
-| UI | [frontend/components/AtlasChat.tsx](../frontend/components/AtlasChat.tsx) | Built on `@ai-sdk/react useChat` with custom `DefaultChatTransport` |
+| Workflow + agent | [frontend/lib/agents/atlas-agent.ts](../frontend/lib/agents/atlas-agent.ts) | `"use workflow"` function builds a `DurableAgent` with Claude Haiku 4.5 and four tools |
+| Tools | [frontend/lib/agents/atlas-tools.ts](../frontend/lib/agents/atlas-tools.ts) | Four `"use step"` functions that read vault state, user position, oracle price, recent Reactive callbacks via viem |
+| POST API | [frontend/app/api/atlas-chat/route.ts](../frontend/app/api/atlas-chat/route.ts) | Starts the workflow with `start()` and returns `x-workflow-run-id` in the response header |
+| Resume API | [frontend/app/api/atlas-chat/[runId]/stream/route.ts](../frontend/app/api/atlas-chat/[runId]/stream/route.ts) | GET endpoint that resumes an existing run's stream from a chunk index |
+| Model | `anthropic/claude-haiku-4.5` via Vercel AI Gateway | Routed via Workflow + Gateway; deployment uses OIDC, no hard-coded key |
+| UI | [frontend/components/AtlasChat.tsx](../frontend/components/AtlasChat.tsx) | `WorkflowChatTransport` replaces the default transport; `localStorage` persists the active run ID so a page refresh mid-stream resumes from the last received chunk |
+
+### The four tools
+
+| Tool | Reads | Returns |
+|---|---|---|
+| `read_vault_state` | `AtlasVault.{totalAssets, couponBps, bufferHealth, depositsPaused}` | Live TVL, current APR, buffer ratio, paused flag |
+| `read_user_position` | `AtlasVault.{balanceOf, previewRedeem}`, `USDC.balanceOf` | aLP shares, claim value, wallet USDC |
+| `read_oracle_price` | `MockPriceOracle.getPrice()` | ETH/USD scaled to 1e18 |
+| `read_recent_callbacks` | `AtlasHook.lastNonce`, `eth_getLogs` for `RebalanceCallbackReceived` | List of recent cross-chain callbacks with nonce, delta, tx hash, time-since |
+
+Each tool is a `"use step"` function: it runs with full Node.js access, results are cached by input, and the WDK retries on transient RPC failures. Tools are exposed to the model with zod schemas so Claude calls them with validated arguments.
+
+### Why durable
+
+| Failure mode | Old (streamText) | New (DurableAgent) |
+|---|---|---|
+| Serverless function times out at 60s mid-stream | User sees partial text, must resend | `WorkflowChatTransport` reconnects to the run and resumes from the last chunk |
+| User refreshes the page during a long answer | Lost | Active run ID is in `localStorage`; chat resumes on remount |
+| RPC fails on a tool call | Whole turn errors | Step retries automatically |
+| Stale context block | Numbers go out of date between turns | Agent calls fresh tools every turn |
 
 ### Grounding rules
 
