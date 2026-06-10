@@ -69,13 +69,13 @@ function HowItWorks() {
     const steps = [
         {
             n: "1",
-            title: "Deposit liquidity",
-            body: "Add WETH + USDC through the Atlas hook. The pool registers your position as usual.",
+            title: "Add pool liquidity",
+            body: "An LP adds WETH + USDC to the v4 pool. The Atlas hook intercepts the add and registers the position.",
         },
         {
             n: "2",
             title: "Hedge opens automatically",
-            body: "The hook computes your volatile-asset delta and opens a matched perpetual short.",
+            body: "The hook computes the volatile-asset delta and opens a matched perpetual short on the pool LP's behalf.",
         },
         {
             n: "3",
@@ -84,8 +84,8 @@ function HowItWorks() {
         },
         {
             n: "4",
-            title: "Smoothed payout",
-            body: "Funding income + swap fees flow into a vault that pays a flat 8% APR to aLP holders.",
+            title: "Smoothed payout via the vault",
+            body: "Funding income + swap fees flow into the ERC-4626 vault. Separately, anyone can deposit USDC on /deposit to mint aLP shares and earn the flat 8% APR.",
         },
     ];
     return (
