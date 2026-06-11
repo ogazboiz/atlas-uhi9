@@ -37,20 +37,18 @@ Final score = weighted sum. Tier mapping: ≥75 HIGH (emerald), ≥50 MEDIUM (am
 3. Volatility component drops sharply, tier flips to MEDIUM within 3 seconds
 4. ~15-20 seconds later the Reactive Network callback lands, the freshness component resets to 100, and the gauge ticks back up
 
-## 2. Ask Atlas (Durable Agent)
+## 2. Ask Atlas
 
-A natural-language chat embedded on `/positions` and `/activity`. Backed by a Vercel Workflow DevKit `DurableAgent` that calls four on-chain reader tools per turn, so every answer cites live contract state rather than a stale context blob.
+A natural-language chat embedded on `/positions` and `/activity`. Backed by `streamText` against Gemini 2.5 Flash with four on-chain reader tools, so every numeric answer cites live contract state rather than a stale context blob.
 
 ### Implementation
 
 | Layer | File | Detail |
 |---|---|---|
-| Workflow + agent | [frontend/lib/agents/atlas-agent.ts](../frontend/lib/agents/atlas-agent.ts) | `"use workflow"` function builds a `DurableAgent` with Claude Haiku 4.5 and four tools |
-| Tools | [frontend/lib/agents/atlas-tools.ts](../frontend/lib/agents/atlas-tools.ts) | Four `"use step"` functions that read vault state, user position, oracle price, recent Reactive callbacks via viem |
-| POST API | [frontend/app/api/atlas-chat/route.ts](../frontend/app/api/atlas-chat/route.ts) | Starts the workflow with `start()` and returns `x-workflow-run-id` in the response header |
-| Resume API | [frontend/app/api/atlas-chat/[runId]/stream/route.ts](../frontend/app/api/atlas-chat/[runId]/stream/route.ts) | GET endpoint that resumes an existing run's stream from a chunk index |
-| Model | `anthropic/claude-haiku-4.5` via Vercel AI Gateway | Routed via Workflow + Gateway; deployment uses OIDC, no hard-coded key |
-| UI | [frontend/components/AtlasChat.tsx](../frontend/components/AtlasChat.tsx) | `WorkflowChatTransport` replaces the default transport; `localStorage` persists the active run ID so a page refresh mid-stream resumes from the last received chunk |
+| Chat endpoint | [frontend/app/api/atlas-chat/route.ts](../frontend/app/api/atlas-chat/route.ts) | `streamText` from `ai` v6 against `@ai-sdk/google` direct provider; `stopWhen(stepCountIs(5))` so the model can chain tool calls and a final text answer in one request; returns `result.toUIMessageStreamResponse()` |
+| Tools | [frontend/lib/agents/atlas-tools.ts](../frontend/lib/agents/atlas-tools.ts) | Four viem reader functions that hit Unichain Sepolia and return plain JSON to the model |
+| Model | `gemini-2.5-flash` via `createGoogleGenerativeAI({apiKey: process.env.GEMINI_API_KEY})` | Direct provider call. No Gateway, no OIDC, no Workflow runtime in the request path |
+| UI | [frontend/components/AtlasChat.tsx](../frontend/components/AtlasChat.tsx) | `useChat` with `DefaultChatTransport`; no run IDs, no resumable streams |
 
 ### The four tools
 
@@ -61,16 +59,11 @@ A natural-language chat embedded on `/positions` and `/activity`. Backed by a Ve
 | `read_oracle_price` | `MockPriceOracle.getPrice()` | ETH/USD scaled to 1e18 |
 | `read_recent_callbacks` | `AtlasHook.lastNonce`, `eth_getLogs` for `RebalanceCallbackReceived` | List of recent cross-chain callbacks with nonce, delta, tx hash, time-since |
 
-Each tool is a `"use step"` function: it runs with full Node.js access, results are cached by input, and the WDK retries on transient RPC failures. Tools are exposed to the model with zod schemas so Claude calls them with validated arguments.
+Tools are passed to `streamText` via the `tools` map with zod input schemas, so the model calls them with validated arguments. The system prompt forces a tool call for any question that requires a number.
 
-### Why durable
+### Why not durable
 
-| Failure mode | Old (streamText) | New (DurableAgent) |
-|---|---|---|
-| Serverless function times out at 60s mid-stream | User sees partial text, must resend | `WorkflowChatTransport` reconnects to the run and resumes from the last chunk |
-| User refreshes the page during a long answer | Lost | Active run ID is in `localStorage`; chat resumes on remount |
-| RPC fails on a tool call | Whole turn errors | Step retries automatically |
-| Stale context block | Numbers go out of date between turns | Agent calls fresh tools every turn |
+Resumable runs were prototyped first via the Vercel Workflow DevKit `DurableAgent`. The DurableAgent serialization boundary requires the model to be passed as a string id, which routes through Vercel AI Gateway, and Gateway requires a credit card on file before serving requests. We pivoted to a plain `streamText` call against Gemini directly so the chat works on a free Vercel project. The WDK install and the legacy `lib/agents/atlas-agent.ts` file remain in the repo for reference, but they are not on the live request path.
 
 ### Grounding rules
 
@@ -103,10 +96,10 @@ Atlas: I see 4 RebalanceCallback events in the last 20 entries on this
 ### Setup for self-hosting
 
 If you fork this and deploy on Vercel:
-1. Enable Vercel AI Gateway in your project settings.
-2. Atlas will route through Gateway via OIDC automatically. No API key needed.
+1. Set `GEMINI_API_KEY` in the Vercel project's env vars (Settings → Environment Variables). The free tier of Google AI Studio is enough for demo traffic.
+2. Redeploy. The chat will use the key directly via `@ai-sdk/google` with no Gateway in the path.
 
-For local development, set `AI_GATEWAY_API_KEY` or any provider-specific key (Anthropic, OpenAI) in `.env.local`.
+For local development, copy `frontend/.env.example` to `frontend/.env.local` and set `GEMINI_API_KEY` there.
 
 ## Honest scope
 

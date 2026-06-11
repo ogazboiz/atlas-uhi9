@@ -62,19 +62,25 @@ Atlas ships two AI components, both grounded in real on-chain reads.
 - Trigger volatility on `/compare`, watch the confidence tier flip from HIGH to
   MEDIUM, then back to HIGH after the next Reactive callback freshens the signal.
 
-**Ask Atlas Durable Agent** (visible on `/positions` and `/activity`)
-- Vercel Workflow DevKit `DurableAgent` ([frontend/lib/agents/atlas-agent.ts](frontend/lib/agents/atlas-agent.ts))
-  running Claude Haiku 4.5 via AI Gateway.
-- Four tools as `"use step"` functions in
+**Ask Atlas** (visible on `/positions` and `/activity`)
+- AI SDK 6 `streamText` against Gemini 2.5 Flash via the `@ai-sdk/google`
+  direct provider. No Gateway, no OIDC; just a `GEMINI_API_KEY` env var
+  in the Vercel project.
+- Four viem-backed read tools in
   [atlas-tools.ts](frontend/lib/agents/atlas-tools.ts): `read_vault_state`,
   `read_user_position`, `read_oracle_price`, `read_recent_callbacks`. Each
-  one is a durable, retryable, cached on-chain read.
-- POST `/api/atlas-chat` starts the workflow and returns
-  `x-workflow-run-id`. GET `/api/atlas-chat/[runId]/stream` resumes the
-  same run if the function times out or the browser refreshes mid-stream.
-- Client uses `WorkflowChatTransport` with `localStorage`-persisted run IDs,
-  so an answer interrupted by a refresh picks up at the last received chunk
-  instead of starting over.
+  returns live numbers from Unichain Sepolia contracts.
+- POST `/api/atlas-chat` ([route.ts](frontend/app/api/atlas-chat/route.ts))
+  runs `streamText` with `stopWhen(stepCountIs(5))` so the model can chain
+  tool calls and a final text answer in a single request.
+- Client uses the AI SDK's `DefaultChatTransport` via `useChat`
+  ([AtlasChat.tsx](frontend/components/AtlasChat.tsx)) — a normal streaming
+  chat with no run IDs or resumable runs.
+- Durable resumable runs were prototyped via the Vercel Workflow DevKit
+  `DurableAgent`, but we pivoted: a `DurableAgent` boundary forces the
+  model id through Vercel AI Gateway, which requires a credit card on
+  file. The legacy agent file is kept for reference but is not on the
+  request path.
 
 ### Test coverage
 
@@ -186,8 +192,7 @@ See [tech-stack.md](./tech-stack.md) for full environment requirements.
 ├── roadmap.md                 # 3-week + post-hackathon plan
 ├── tech-stack.md              # stack rationale
 ├── contracts/                 # Solidity (Foundry)
-├── frontend/                  # Next.js dashboard (planned)
-└── indexer/                   # Ponder event indexer (planned)
+└── frontend/                  # Next.js dashboard (shipped — Next.js 16 + Tailwind v4)
 ```
 
 Start with [contracts/README.md](./contracts/README.md) for build and deploy instructions.
