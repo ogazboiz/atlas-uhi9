@@ -98,24 +98,43 @@ export function ReactiveEventFeed() {
     });
 
     return (
-        <section className="border border-zinc-900 rounded-xl p-6 mt-6 bg-zinc-950">
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Live Reactive event feed</h2>
-                <span className="text-xs text-zinc-500">{events.length} callbacks observed</span>
+        <section className="atlas-card-strong p-6">
+            <div className="mb-4 flex items-center justify-between">
+                <div>
+                    <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+                        Live feed
+                    </div>
+                    <h2 className="mt-1 text-lg font-semibold tracking-tight text-white">
+                        Reactive callbacks
+                    </h2>
+                </div>
+                <span className="font-mono text-[11px] text-zinc-500">
+                    {events.length} observed
+                </span>
             </div>
-            <p className="text-sm text-zinc-500 mb-5">
-                Each row below is a <code className="text-zinc-300">RebalanceCallbackReceived</code> event emitted
-                by AtlasHook after a cross-chain callback from Lasna landed and completed. Trigger a price move
-                above; a new row will stream in within roughly 15-20 seconds.
+
+            <p className="mb-5 text-xs text-zinc-400">
+                Each row is a{" "}
+                <code className="rounded bg-white/[0.04] px-1 py-0.5 text-zinc-300">
+                    RebalanceCallbackReceived
+                </code>{" "}
+                event after a cross-chain callback from Lasna landed. Press a trigger and watch a new row appear in
+                ~15-20 seconds.
             </p>
 
             {events.length === 0 ? (
-                <div className="border border-dashed border-zinc-800 rounded-lg p-8 text-center text-sm text-zinc-500">
-                    No events observed yet. Trigger a volatility event above to see the first cross-chain callback.
+                <div className="atlas-card flex flex-col items-center justify-center gap-2 border-dashed p-10 text-center">
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-violet-500/10 text-violet-300">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                            <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    </span>
+                    <div className="text-sm text-zinc-400">No callbacks yet</div>
+                    <div className="text-[11px] text-zinc-500">Trigger volatility above to see the first one</div>
                 </div>
             ) : (
-                <ul className="divide-y divide-zinc-900 border border-zinc-900 rounded-lg overflow-hidden">
-                    {events.slice(0, 12).map((e) => (
+                <ul className="atlas-card divide-y divide-white/[0.04] overflow-hidden">
+                    {events.slice(0, 8).map((e) => (
                         <EventRow key={`${e.txHash}-${e.nonce}`} ev={e} now={now} />
                     ))}
                 </ul>
@@ -129,27 +148,33 @@ function EventRow({ev, now}: {ev: FeedEvent; now: number}) {
     const deltaEth = formatDelta(ev.appliedDelta);
     const deltaPositive = ev.appliedDelta > 0n;
     return (
-        <li className="px-4 py-3 flex items-center justify-between gap-4 text-sm">
-            <div className="flex items-center gap-3 min-w-0">
+        <li className="atlas-fade-in flex items-center justify-between gap-4 px-4 py-3.5 text-sm transition-colors hover:bg-white/[0.02]">
+            <div className="flex min-w-0 items-center gap-3">
                 <span className="relative flex h-2 w-2 shrink-0">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-30" />
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
                 </span>
                 <div className="min-w-0">
-                    <div className="font-medium text-zinc-200">
-                        Callback #{ev.nonce.toString()}{" "}
-                        <span className={`ml-2 text-xs ${deltaPositive ? "text-rose-400" : "text-emerald-400"}`}>
-                            {deltaPositive ? "+" : ""}
-                            {deltaEth} ETH hedge
+                    <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs text-zinc-500">#{ev.nonce.toString()}</span>
+                        <span
+                            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                                deltaPositive
+                                    ? "border-rose-500/25 bg-rose-500/10 text-rose-300"
+                                    : "border-emerald-500/25 bg-emerald-500/10 text-emerald-300"
+                            }`}
+                        >
+                            {deltaPositive ? "+" : "−"}
+                            {deltaEth} ETH
                         </span>
                     </div>
-                    <div className="text-xs text-zinc-500">
+                    <div className="mt-0.5 text-[11px] text-zinc-500">
                         {ago} ·{" "}
                         <a
                             href={`https://sepolia.uniscan.xyz/tx/${ev.txHash}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="underline underline-offset-2 hover:text-zinc-300"
+                            className="font-mono underline underline-offset-2 hover:text-zinc-300"
                         >
                             {short(ev.txHash)}
                         </a>
@@ -160,9 +185,9 @@ function EventRow({ev, now}: {ev: FeedEvent; now: number}) {
                 href={`${REACTIVE.reactiveExplorer}/address/${REACTIVE.reactive}`}
                 target="_blank"
                 rel="noreferrer"
-                className="shrink-0 text-xs text-zinc-500 hover:text-zinc-300"
+                className="shrink-0 text-[11px] text-zinc-500 transition-colors hover:text-violet-300"
             >
-                Lasna RSC ↗
+                Lasna ↗
             </a>
         </li>
     );

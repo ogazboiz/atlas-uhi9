@@ -20,53 +20,63 @@ export function ReactiveStatus() {
     const nonce = lastNonce === undefined ? "—" : (lastNonce as bigint).toString();
 
     return (
-        <section className="border border-zinc-900 rounded-xl p-6 mt-6 bg-zinc-950">
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Reactive Network status</h2>
-                <span className="inline-flex items-center gap-2 text-xs text-emerald-400">
-                    <span className="relative flex h-2 w-2">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-50" />
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+        <section className="atlas-card-strong relative overflow-hidden p-6">
+            <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-violet-500/10 blur-3xl" />
+            <div className="relative">
+                <div className="mb-4 flex items-center justify-between">
+                    <div>
+                        <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+                            Cross-chain
+                        </div>
+                        <h2 className="mt-1 text-lg font-semibold tracking-tight text-white">
+                            Reactive Network status
+                        </h2>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-emerald-300">
+                        <span className="relative flex h-1.5 w-1.5">
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
+                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                        </span>
+                        Subscribed
                     </span>
-                    Subscribed
-                </span>
-            </div>
-            <p className="text-sm text-zinc-500 mb-5">
-                The AtlasReactive RSC on Reactive Lasna subscribes to{" "}
-                <code className="text-zinc-300">MockPriceOracle.PriceUpdated</code> on Unichain Sepolia and
-                forwards a hedge-rebalance callback through AtlasCallback. The subscription is verifiable on
-                Lasna via{" "}
-                <code className="text-zinc-300">rnk_getFilters</code>. The hook&apos;s{" "}
-                <code className="text-zinc-300">lastNonce</code> below increments each time the cross-chain
-                callback lands; live propagation latency on Lasna testnet varies.
-            </p>
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <NonceCard nonce={nonce} />
-                <AddressCard
-                    label="AtlasReactive (Lasna)"
-                    address={REACTIVE.reactive}
-                    href={`${REACTIVE.reactiveExplorer}/address/${REACTIVE.reactive}`}
-                />
-                <AddressCard
-                    label="AtlasCallback (Unichain)"
-                    address={REACTIVE.callback}
-                    href={`${UNICHAIN_EXPLORER}/${REACTIVE.callback}`}
-                />
-            </div>
+                <p className="mb-5 text-xs text-zinc-400">
+                    AtlasReactive on Lasna watches{" "}
+                    <code className="rounded bg-white/[0.04] px-1 py-0.5 text-zinc-300">PriceUpdated</code> on
+                    Unichain Sepolia and forwards a hedge-rebalance callback through AtlasCallback. The hook&apos;s
+                    nonce increments on each landed callback.
+                </p>
 
-            <div className="mt-4 text-xs text-zinc-600">
-                Subscribed topic{" "}
-                <code className="text-zinc-400">PriceUpdated(uint256,uint256)</code> at{" "}
-                <a
-                    href={`${UNICHAIN_EXPLORER}/${ATLAS.oracle}`}
-                    className="underline underline-offset-2 hover:text-zinc-300"
-                >
-                    {short(ATLAS.oracle)}
-                </a>
-                {" · "}
-                Pool ID{" "}
-                <code className="text-zinc-400">{short(REACTIVE.poolId)}</code>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <NonceCard nonce={nonce} />
+                    <AddressCard
+                        label="AtlasReactive · Lasna"
+                        address={REACTIVE.reactive}
+                        href={`${REACTIVE.reactiveExplorer}/address/${REACTIVE.reactive}`}
+                    />
+                    <AddressCard
+                        label="AtlasCallback · Unichain"
+                        address={REACTIVE.callback}
+                        href={`${UNICHAIN_EXPLORER}/${REACTIVE.callback}`}
+                    />
+                </div>
+
+                <div className="mt-4 text-[11px] text-zinc-500">
+                    Topic{" "}
+                    <code className="rounded bg-white/[0.04] px-1 py-0.5 text-zinc-400">
+                        PriceUpdated(uint256,uint256)
+                    </code>{" "}
+                    at{" "}
+                    <a
+                        href={`${UNICHAIN_EXPLORER}/${ATLAS.oracle}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-mono text-zinc-400 underline underline-offset-2 hover:text-white"
+                    >
+                        {short(ATLAS.oracle)}
+                    </a>
+                </div>
             </div>
         </section>
     );
@@ -74,27 +84,27 @@ export function ReactiveStatus() {
 
 function NonceCard({nonce}: {nonce: string}) {
     return (
-        <div className="border border-zinc-900 rounded-lg p-4">
-            <div className="text-xs uppercase tracking-widest text-zinc-500 mb-1">Hook lastNonce</div>
-            <div className="text-3xl font-semibold tabular-nums">{nonce}</div>
-            <div className="text-xs text-zinc-500 mt-1">Updates on each RSC callback</div>
+        <div className="atlas-card p-4">
+            <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">Hook lastNonce</div>
+            <div className="mt-1 text-3xl font-semibold tabular-nums text-emerald-300">{nonce}</div>
+            <div className="mt-0.5 text-[10px] text-zinc-500">Each landed callback +1</div>
         </div>
     );
 }
 
 function AddressCard({label, address, href}: {label: string; address: string; href: string}) {
     return (
-        <div className="border border-zinc-900 rounded-lg p-4">
-            <div className="text-xs uppercase tracking-widest text-zinc-500 mb-1">{label}</div>
+        <div className="atlas-card group p-4">
+            <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">{label}</div>
             <a
                 href={href}
                 target="_blank"
                 rel="noreferrer"
-                className="font-mono text-sm text-zinc-300 hover:text-white underline underline-offset-2"
+                className="mt-1.5 inline-flex items-center gap-1.5 font-mono text-sm text-zinc-200 transition-colors hover:text-white"
             >
-                {short(address)}
+                {short(address)} <span className="text-zinc-500 group-hover:text-violet-400">→</span>
             </a>
-            <div className="text-xs text-zinc-500 mt-1">View on explorer →</div>
+            <div className="mt-0.5 text-[10px] text-zinc-500">Open in explorer</div>
         </div>
     );
 }

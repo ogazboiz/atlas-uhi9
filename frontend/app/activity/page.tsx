@@ -1,30 +1,49 @@
 "use client";
 
-import Link from "next/link";
-import {useEffect, useState} from "react";
-import {ConnectButton} from "@rainbow-me/rainbowkit";
+import {useEffect, useMemo, useState} from "react";
 import {usePublicClient} from "wagmi";
 import {parseAbiItem} from "viem";
 import {ATLAS} from "@/lib/contracts";
 import {AtlasChat} from "@/components/AtlasChat";
+import {Chip, PageFrame, Shell, StatCard} from "@/components/Shell";
 
-type ActivityKind = "Deposit" | "Withdraw" | "FeesDeposited" | "HedgeOpened" | "HedgeResized" | "HedgeClosed" | "RebalanceCallback";
+type ActivityKind =
+    | "Deposit"
+    | "Withdraw"
+    | "FeesDeposited"
+    | "HedgeOpened"
+    | "HedgeResized"
+    | "HedgeClosed"
+    | "RebalanceCallback";
 
 type ActivityEvent = {
     kind: ActivityKind;
     blockNumber: bigint;
     timestamp: number;
     txHash: `0x${string}`;
-    primary: string; // short headline
-    secondary: string; // detail line
+    primary: string;
+    secondary: string;
+};
+
+type FilterKey = "all" | "vault" | "hedge" | "reactive";
+
+const FILTER_MATCH: Record<FilterKey, ActivityKind[] | null> = {
+    all: null,
+    vault: ["Deposit", "Withdraw", "FeesDeposited"],
+    hedge: ["HedgeOpened", "HedgeResized", "HedgeClosed"],
+    reactive: ["RebalanceCallback"],
 };
 
 const EVENTS = [
     {
         kind: "Deposit" as ActivityKind,
         address: ATLAS.vault,
-        item: parseAbiItem("event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares)"),
-        render: (l: {args: {sender?: `0x${string}`; owner?: `0x${string}`; assets?: bigint; shares?: bigint}}) => ({
+        item: parseAbiItem(
+            "event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares)",
+        ),
+        render: (l: {
+            args: {sender?: `0x${string}`; owner?: `0x${string}`; assets?: bigint; shares?: bigint};
+        }) => ({
             primary: `Deposit · ${fmt(l.args.assets ?? 0n, 2)} USDC`,
             secondary: `${shortAddr(l.args.owner ?? "0x0")} received ${fmt(l.args.shares ?? 0n, 4)} aLP`,
         }),
@@ -32,7 +51,9 @@ const EVENTS = [
     {
         kind: "Withdraw" as ActivityKind,
         address: ATLAS.vault,
-        item: parseAbiItem("event Withdraw(address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares)"),
+        item: parseAbiItem(
+            "event Withdraw(address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares)",
+        ),
         render: (l: {args: {owner?: `0x${string}`; assets?: bigint; shares?: bigint}}) => ({
             primary: `Withdraw · ${fmt(l.args.assets ?? 0n, 2)} USDC`,
             secondary: `${shortAddr(l.args.owner ?? "0x0")} burned ${fmt(l.args.shares ?? 0n, 4)} aLP`,
@@ -74,14 +95,19 @@ const EVENTS = [
         address: ATLAS.hook,
         item: parseAbiItem("event HedgeClosed(bytes32 indexed poolId, int256 finalPnL)"),
         render: (l: {args: {finalPnL?: bigint}}) => ({
-            primary: `Hedge closed · PnL ${(l.args.finalPnL ?? 0n) >= 0n ? "+" : "-"}${fmt((l.args.finalPnL ?? 0n) >= 0n ? (l.args.finalPnL ?? 0n) : -(l.args.finalPnL ?? 0n), 4)}`,
+            primary: `Hedge closed · PnL ${(l.args.finalPnL ?? 0n) >= 0n ? "+" : "-"}${fmt(
+                (l.args.finalPnL ?? 0n) >= 0n ? l.args.finalPnL ?? 0n : -(l.args.finalPnL ?? 0n),
+                4,
+            )}`,
             secondary: "Position fully unwound",
         }),
     },
     {
         kind: "RebalanceCallback" as ActivityKind,
         address: ATLAS.hook,
-        item: parseAbiItem("event RebalanceCallbackReceived(bytes32 indexed poolId, int256 appliedDelta, uint256 nonce)"),
+        item: parseAbiItem(
+            "event RebalanceCallbackReceived(bytes32 indexed poolId, int256 appliedDelta, uint256 nonce)",
+        ),
         render: (l: {args: {appliedDelta?: bigint; nonce?: bigint}}) => {
             const d = l.args.appliedDelta ?? 0n;
             const sign = d < 0n ? "-" : "+";
@@ -97,6 +123,7 @@ export default function ActivityPage() {
     const publicClient = usePublicClient();
     const [events, setEvents] = useState<ActivityEvent[]>([]);
     const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState<FilterKey>("all");
 
     useEffect(() => {
         if (!publicClient) return;
@@ -107,7 +134,6 @@ export default function ActivityPage() {
                 const latest = await publicClient.getBlockNumber();
                 const fromBlock = latest > 50000n ? latest - 50000n : 0n;
                 const allLogs: ActivityEvent[] = [];
-
                 for (const cfg of EVENTS) {
                     const logs = await publicClient.getLogs({
                         address: cfg.address,
@@ -127,11 +153,10 @@ export default function ActivityPage() {
                                 ...rendered,
                             });
                         } catch {
-                            // skip undecodable logs
+                            // skip undecodable
                         }
                     }
                 }
-
                 if (cancelled) return;
                 setEvents(allLogs.sort((a, b) => Number(b.blockNumber - a.blockNumber)));
             } catch (err) {
@@ -145,24 +170,54 @@ export default function ActivityPage() {
         };
     }, [publicClient]);
 
+    const filtered = useMemo(() => {
+        const match = FILTER_MATCH[filter];
+        if (!match) return events;
+        return events.filter((e) => match.includes(e.kind));
+    }, [events, filter]);
+
+    const counts = useMemo(() => {
+        const deposits = events.filter((e) => e.kind === "Deposit").length;
+        const withdraws = events.filter((e) => e.kind === "Withdraw").length;
+        const callbacks = events.filter((e) => e.kind === "RebalanceCallback").length;
+        return {deposits, withdraws, callbacks, total: events.length};
+    }, [events]);
+
     return (
-        <div className="flex flex-col flex-1">
-            <Header />
-            <main className="flex flex-1 flex-col px-4 sm:px-6 py-6 sm:py-10 max-w-5xl mx-auto w-full">
-                <div className="mb-6 sm:mb-8">
-                    <Link href="/" className="text-xs text-zinc-500 hover:text-white">
-                        ← Back
-                    </Link>
-                    <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight mt-2 mb-2">Activity</h1>
-                    <p className="text-zinc-400 max-w-2xl text-sm sm:text-base">
-                        Unified timeline of every on-chain event from the vault and the hook. Pulled from the live
-                        contracts on Unichain Sepolia. Reactive callbacks from Lasna land here as Rebalance entries.
+        <Shell>
+            <PageFrame>
+                <div className="mb-8">
+                    <Chip tone="violet">Unified event timeline</Chip>
+                    <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+                        Activity
+                    </h1>
+                    <p className="mt-3 max-w-2xl text-sm text-zinc-400 sm:text-base">
+                        Every on-chain event from the vault and hook. Pulled live from Unichain Sepolia. Reactive
+                        callbacks from Lasna land here as rebalance entries.
                     </p>
                 </div>
 
-                <div className="mb-6">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+                    <StatCard label="Total events" value={loading ? "…" : counts.total} tone="default" />
+                    <StatCard label="Deposits" value={loading ? "…" : counts.deposits} tone="emerald" />
+                    <StatCard label="Withdrawals" value={loading ? "…" : counts.withdraws} tone="amber" />
+                    <StatCard
+                        label="Reactive callbacks"
+                        value={loading ? "…" : counts.callbacks}
+                        tone="violet"
+                    />
+                </div>
+
+                <div className="mt-6 grid gap-4 lg:grid-cols-[1.5fr_1fr]">
+                    <FeedPanel
+                        events={filtered}
+                        loading={loading}
+                        filter={filter}
+                        setFilter={setFilter}
+                        counts={counts}
+                    />
                     <AtlasChat
-                        title="Ask Atlas about recent activity"
+                        title="Ask Atlas"
                         context={{
                             page: "/activity",
                             recentEvents: events.slice(0, 20).map((e) => ({
@@ -175,102 +230,132 @@ export default function ActivityPage() {
                             })),
                             totalEventCount: events.length,
                         }}
-                        opener="I can summarise the recent activity on this page and answer questions about specific events. Try: 'How many reactive callbacks landed today?' or 'Show me the last deposit.'"
+                        opener="I can summarise the activity on this page and answer questions about specific events. Try: 'How many reactive callbacks landed today?' or 'When was the last deposit?'"
                     />
                 </div>
-
-                <section className="border border-zinc-900 rounded-xl p-2 sm:p-4 bg-zinc-950">
-                    {loading ? (
-                        <Empty text="Loading recent events..." />
-                    ) : events.length === 0 ? (
-                        <Empty text="No events in the last 50k blocks. Trigger something on /compare or /deposit to populate this feed." />
-                    ) : (
-                        <ul className="divide-y divide-zinc-900">
-                            {events.map((e, i) => (
-                                <li key={`${e.txHash}-${i}`} className="px-3 sm:px-4 py-3 flex items-center justify-between gap-4 text-sm">
-                                    <div className="flex items-center gap-3 min-w-0">
-                                        <KindBadge kind={e.kind} />
-                                        <div className="min-w-0">
-                                            <div className="font-medium text-zinc-200 truncate">{e.primary}</div>
-                                            <div className="text-xs text-zinc-500 truncate">{e.secondary}</div>
-                                        </div>
-                                    </div>
-                                    <div className="text-right shrink-0 text-xs text-zinc-500">
-                                        <div>{relativeTime(Math.floor(Date.now() / 1000) - e.timestamp)}</div>
-                                        <a
-                                            href={`https://sepolia.uniscan.xyz/tx/${e.txHash}`}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="underline underline-offset-2 hover:text-zinc-300"
-                                        >
-                                            {short(e.txHash)}
-                                        </a>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </section>
-            </main>
-            <Footer />
-        </div>
+            </PageFrame>
+        </Shell>
     );
 }
 
-function Header() {
+function FeedPanel({
+    events,
+    loading,
+    filter,
+    setFilter,
+    counts,
+}: {
+    events: ActivityEvent[];
+    loading: boolean;
+    filter: FilterKey;
+    setFilter: (k: FilterKey) => void;
+    counts: {deposits: number; withdraws: number; callbacks: number; total: number};
+}) {
+    const filters: {key: FilterKey; label: string; count: number}[] = [
+        {key: "all", label: "All", count: counts.total},
+        {key: "vault", label: "Vault", count: counts.deposits + counts.withdraws},
+        {key: "hedge", label: "Hedge", count: 0},
+        {key: "reactive", label: "Reactive", count: counts.callbacks},
+    ];
     return (
-        <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-900">
-            <Link href="/" className="text-lg font-semibold tracking-tight">
-                Atlas
-            </Link>
-            <div className="flex items-center gap-4">
-                <Link href="/compare" className="text-sm text-zinc-400 hover:text-white hidden sm:inline">
-                    Compare
-                </Link>
-                <Link href="/deposit" className="text-sm text-zinc-400 hover:text-white hidden sm:inline">
-                    Deposit
-                </Link>
-                <Link href="/positions" className="text-sm text-zinc-400 hover:text-white hidden sm:inline">
-                    Positions
-                </Link>
-                <ConnectButton showBalance={false} chainStatus="icon" />
+        <section className="atlas-card-strong p-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                    <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+                        Timeline
+                    </div>
+                    <h2 className="mt-1 text-lg font-semibold tracking-tight text-white">Live events</h2>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                    {filters.map((f) => {
+                        const active = filter === f.key;
+                        return (
+                            <button
+                                key={f.key}
+                                onClick={() => setFilter(f.key)}
+                                className={`rounded-full px-3 py-1 text-[11px] font-medium transition-colors ${
+                                    active
+                                        ? "bg-white text-black"
+                                        : "border border-white/10 bg-white/[0.03] text-zinc-400 hover:text-white"
+                                }`}
+                            >
+                                {f.label}
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
-        </header>
+
+            {loading ? (
+                <ul className="space-y-2">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                        <li key={i} className="atlas-card flex items-center justify-between p-4">
+                            <div className="flex items-center gap-3">
+                                <div className="h-6 w-20 animate-pulse rounded bg-white/[0.04]" />
+                                <div className="h-4 w-48 animate-pulse rounded bg-white/[0.04]" />
+                            </div>
+                            <div className="h-3 w-16 animate-pulse rounded bg-white/[0.04]" />
+                        </li>
+                    ))}
+                </ul>
+            ) : events.length === 0 ? (
+                <div className="atlas-card flex flex-col items-center justify-center gap-2 border-dashed p-10 text-center">
+                    <div className="text-sm text-zinc-400">No events match this filter</div>
+                    <div className="text-[11px] text-zinc-500">
+                        Trigger an action on /compare or /deposit to populate the feed
+                    </div>
+                </div>
+            ) : (
+                <ul className="atlas-card divide-y divide-white/[0.04] overflow-hidden">
+                    {events.map((e, i) => (
+                        <li
+                            key={`${e.txHash}-${i}`}
+                            className="atlas-fade-in flex items-center justify-between gap-3 px-4 py-3.5 transition-colors hover:bg-white/[0.02]"
+                        >
+                            <div className="flex min-w-0 items-center gap-3">
+                                <KindBadge kind={e.kind} />
+                                <div className="min-w-0">
+                                    <div className="truncate text-sm font-medium text-zinc-100">{e.primary}</div>
+                                    <div className="truncate text-[11px] text-zinc-500">{e.secondary}</div>
+                                </div>
+                            </div>
+                            <div className="shrink-0 text-right">
+                                <div className="text-[11px] text-zinc-400">
+                                    {relativeTime(Math.floor(Date.now() / 1000) - e.timestamp)}
+                                </div>
+                                <a
+                                    href={`https://sepolia.uniscan.xyz/tx/${e.txHash}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="font-mono text-[10px] text-zinc-500 underline underline-offset-2 hover:text-zinc-300"
+                                >
+                                    {short(e.txHash)}
+                                </a>
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </section>
     );
 }
 
 function KindBadge({kind}: {kind: ActivityKind}) {
     const styles: Record<ActivityKind, string> = {
-        Deposit: "bg-emerald-950 text-emerald-300 border-emerald-900",
-        Withdraw: "bg-amber-950 text-amber-300 border-amber-900",
-        FeesDeposited: "bg-sky-950 text-sky-300 border-sky-900",
-        HedgeOpened: "bg-emerald-950 text-emerald-300 border-emerald-900",
-        HedgeResized: "bg-zinc-900 text-zinc-300 border-zinc-800",
-        HedgeClosed: "bg-rose-950 text-rose-300 border-rose-900",
-        RebalanceCallback: "bg-violet-950 text-violet-300 border-violet-900",
+        Deposit: "bg-emerald-500/10 text-emerald-300 border-emerald-500/25",
+        Withdraw: "bg-amber-500/10 text-amber-300 border-amber-500/25",
+        FeesDeposited: "bg-sky-500/10 text-sky-300 border-sky-500/25",
+        HedgeOpened: "bg-emerald-500/10 text-emerald-300 border-emerald-500/25",
+        HedgeResized: "bg-white/[0.05] text-zinc-300 border-white/10",
+        HedgeClosed: "bg-rose-500/10 text-rose-300 border-rose-500/25",
+        RebalanceCallback: "bg-violet-500/10 text-violet-300 border-violet-500/25",
     };
     return (
-        <span className={`px-2 py-1 text-[10px] uppercase tracking-wider font-mono rounded border shrink-0 ${styles[kind]}`}>
+        <span
+            className={`shrink-0 rounded-full border px-2.5 py-1 font-mono text-[9px] uppercase tracking-wider ${styles[kind]}`}
+        >
             {kind}
         </span>
-    );
-}
-
-function Empty({text}: {text: string}) {
-    return (
-        <div className="border border-dashed border-zinc-800 rounded-lg p-8 text-center text-sm text-zinc-500">
-            {text}
-        </div>
-    );
-}
-
-function Footer() {
-    return (
-        <footer className="border-t border-zinc-900 px-6 py-8 text-xs text-zinc-500">
-            <div className="max-w-5xl mx-auto">
-                Vault {ATLAS.vault} · Hook {ATLAS.hook}
-            </div>
-        </footer>
     );
 }
 

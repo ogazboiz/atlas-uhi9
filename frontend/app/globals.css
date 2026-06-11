@@ -1,26 +1,138 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+    --background: #050608;
+    --foreground: #f4f4f5;
+
+    /* Atlas brand palette */
+    --atlas-emerald: #10b981;
+    --atlas-emerald-glow: rgba(16, 185, 129, 0.16);
+    --atlas-violet: #a78bfa;
+    --atlas-violet-glow: rgba(167, 139, 250, 0.14);
+    --atlas-sky: #38bdf8;
+    --atlas-sky-glow: rgba(56, 189, 248, 0.14);
+    --atlas-rose: #fb7185;
+    --atlas-amber: #fbbf24;
+
+    /* Surfaces */
+    --surface-0: #050608;
+    --surface-1: #0a0c10;
+    --surface-2: #0e1117;
+    --surface-3: #14181f;
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-strong: rgba(255, 255, 255, 0.12);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+    background:
+        radial-gradient(1200px 600px at 50% -10%, rgba(167, 139, 250, 0.08), transparent 55%),
+        radial-gradient(900px 500px at 100% 100%, rgba(16, 185, 129, 0.06), transparent 60%),
+        radial-gradient(900px 500px at 0% 100%, rgba(56, 189, 248, 0.05), transparent 60%),
+        var(--background);
+    background-attachment: fixed;
+    color: var(--foreground);
+    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-feature-settings: "cv11", "ss01", "ss03";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+/* Reusable utility classes */
+@layer utilities {
+    .atlas-card {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.025) 0%, rgba(255, 255, 255, 0.005) 100%);
+        border: 1px solid var(--border-subtle);
+        border-radius: 16px;
+        backdrop-filter: blur(8px);
+    }
+    .atlas-card-strong {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+        border: 1px solid var(--border-strong);
+        border-radius: 16px;
+        backdrop-filter: blur(12px);
+    }
+    .atlas-glow-emerald {
+        box-shadow: 0 0 60px -10px var(--atlas-emerald-glow);
+    }
+    .atlas-glow-violet {
+        box-shadow: 0 0 60px -10px var(--atlas-violet-glow);
+    }
+    .atlas-glow-sky {
+        box-shadow: 0 0 60px -10px var(--atlas-sky-glow);
+    }
+    .atlas-text-gradient {
+        background: linear-gradient(180deg, #ffffff 0%, #a1a1aa 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    .atlas-text-emerald-gradient {
+        background: linear-gradient(180deg, #6ee7b7 0%, #10b981 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    .atlas-grid-bg {
+        background-image:
+            linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        background-size: 32px 32px;
+    }
+    .atlas-divider {
+        background: linear-gradient(90deg, transparent, var(--border-strong), transparent);
+        height: 1px;
+    }
+    .atlas-pulse {
+        position: relative;
+    }
+    .atlas-pulse::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        box-shadow: 0 0 0 0 currentColor;
+        animation: atlas-pulse-ring 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes atlas-pulse-ring {
+        0% { box-shadow: 0 0 0 0 currentColor; opacity: 0.6; }
+        100% { box-shadow: 0 0 0 14px currentColor; opacity: 0; }
+    }
+    .atlas-fade-in {
+        animation: atlas-fade-in 0.4s ease-out both;
+    }
+    @keyframes atlas-fade-in {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+}
+
+/* Scrollbar polish */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.16);
+}
+
+/* Reset some defaults that fight the design */
+button {
+    cursor: pointer;
+}
+button:disabled {
+    cursor: not-allowed;
 }

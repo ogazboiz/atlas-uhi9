@@ -1,14 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import {useCallback, useState, useEffect} from "react";
-import {ConnectButton} from "@rainbow-me/rainbowkit";
-import {useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt} from "wagmi";
-import {formatUnits, parseUnits, maxUint256} from "viem";
+import {useCallback, useEffect, useState} from "react";
+import {useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract} from "wagmi";
+import {formatUnits, maxUint256, parseUnits} from "viem";
 import {ATLAS} from "@/lib/contracts";
-import {ERC20_ABI, ATLAS_VAULT_ABI} from "@/lib/abis";
+import {ATLAS_VAULT_ABI, ERC20_ABI} from "@/lib/abis";
+import {Chip, PageFrame, PrimaryButton, SecondaryButton, Shell, StatCard} from "@/components/Shell";
 
-const FAUCET_AMOUNT = parseUnits("10000", 18); // 10k mock USDC (18 dec)
+const FAUCET_AMOUNT = parseUnits("10000", 18);
 
 export default function DepositPage() {
     const {address, isConnected} = useAccount();
@@ -72,7 +71,6 @@ export default function DepositPage() {
     const {writeContractAsync} = useWriteContract();
     const {isLoading: txMining} = useWaitForTransactionReceipt({hash: pendingTx});
 
-    // Refetch reads when a tx confirms.
     useEffect(() => {
         if (!txMining && pendingTx) {
             refetchUsdc();
@@ -159,26 +157,15 @@ export default function DepositPage() {
     const busy = !!pendingAction || txMining;
 
     return (
-        <div className="flex flex-col flex-1">
-            <Header />
-            <main className="flex flex-1 flex-col px-4 sm:px-6 py-6 sm:py-10 max-w-5xl mx-auto w-full">
-                <div className="mb-6 sm:mb-8">
-                    <Link href="/" className="text-xs text-zinc-500 hover:text-white">
-                        ← Back
-                    </Link>
-                    <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight mt-2 mb-2">
-                        Deposit into Atlas
-                    </h1>
-                    <p className="text-zinc-400 max-w-2xl text-sm sm:text-base">
-                        Mint mock USDC, deposit into the vault, and receive <code className="text-zinc-300">aLP</code>{" "}
-                        tokens that accrue a flat per-block coupon. The pool, hook, vault, and reactive rebalancing
-                        are all live on Unichain Sepolia.
-                    </p>
-                </div>
-
-                <VaultStats totalAssets={totalAssets as bigint | undefined} couponBps={couponBps as bigint | undefined} bufferHealth={bufferHealth as bigint | undefined} />
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <Shell>
+            <PageFrame>
+                <Header />
+                <VaultStats
+                    totalAssets={totalAssets as bigint | undefined}
+                    couponBps={couponBps as bigint | undefined}
+                    bufferHealth={bufferHealth as bigint | undefined}
+                />
+                <div className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_1fr]">
                     <DepositCard
                         isConnected={isConnected}
                         usdcBalance={usdcBalance as bigint | undefined}
@@ -201,27 +188,30 @@ export default function DepositPage() {
                         withdrawAll={withdrawAll}
                     />
                 </div>
-
-                <Tips />
-            </main>
-            <Footer />
-        </div>
+                <Explainer />
+            </PageFrame>
+        </Shell>
     );
 }
 
 function Header() {
     return (
-        <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-900">
-            <Link href="/" className="text-lg font-semibold tracking-tight">
-                Atlas
-            </Link>
-            <div className="flex items-center gap-4">
-                <Link href="/compare" className="text-sm text-zinc-400 hover:text-white">
-                    Compare
-                </Link>
-                <ConnectButton showBalance={false} chainStatus="icon" />
-            </div>
-        </header>
+        <div className="mb-8">
+            <Chip tone="emerald">
+                <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                </span>
+                ERC-4626 vault · Unichain Sepolia
+            </Chip>
+            <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+                Deposit into <span className="atlas-text-emerald-gradient">Atlas</span>
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm text-zinc-400 sm:text-base">
+                Mint test USDC, deposit it into the vault, receive aLP shares. Shares appreciate at the flat
+                per-block coupon rate. Mocks let you test without a Sepolia faucet.
+            </p>
+        </div>
     );
 }
 
@@ -234,7 +224,7 @@ function VaultStats({
     couponBps?: bigint;
     bufferHealth?: bigint;
 }) {
-    const tvl = totalAssets === undefined ? "—" : `${fmt(totalAssets, 0)} USDC`;
+    const tvl = totalAssets === undefined ? "—" : `${fmt(totalAssets, 0)}`;
     const apr = couponBps === undefined ? "—" : `${(Number(couponBps) / 100).toFixed(2)}%`;
     const bh =
         bufferHealth === undefined
@@ -243,10 +233,30 @@ function VaultStats({
               ? "∞"
               : `${(Number(bufferHealth) / 10000).toFixed(2)}x`;
     return (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <Stat label="Vault total assets" value={tvl} />
-            <Stat label="Current coupon" value={apr} accent />
-            <Stat label="Buffer health" value={bh} />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+            <StatCard
+                label="Vault TVL"
+                value={
+                    <span>
+                        {tvl}
+                        <span className="ml-1.5 text-base text-zinc-500">USDC</span>
+                    </span>
+                }
+                hint="Total assets under management"
+                tone="emerald"
+            />
+            <StatCard
+                label="Current coupon"
+                value={apr}
+                hint="Flat per-block APR"
+                tone="emerald"
+            />
+            <StatCard
+                label="Buffer health"
+                value={bh}
+                hint="Vault surplus vs 30-day obligation"
+                tone="sky"
+            />
         </div>
     );
 }
@@ -278,19 +288,26 @@ function DepositCard({
 }) {
     const usdcDisplay = usdcBalance === undefined ? "0.00" : fmt(usdcBalance, 2);
     return (
-        <section className="border border-zinc-900 rounded-xl p-6 bg-zinc-950">
-            <h2 className="text-xl font-semibold mb-1">Deposit</h2>
-            <p className="text-sm text-zinc-500 mb-5">USDC in, aLP out. Mint test tokens first if your balance is zero.</p>
+        <section className="atlas-card-strong p-6">
+            <div className="mb-5">
+                <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">Action</div>
+                <h2 className="mt-1 text-xl font-semibold tracking-tight text-white">Deposit USDC</h2>
+                <p className="mt-1 text-sm text-zinc-400">
+                    USDC in, aLP out. Mint test tokens first if your balance is zero.
+                </p>
+            </div>
 
-            <div className="border border-zinc-900 rounded-lg p-4 mb-3 bg-black">
-                <div className="flex items-center justify-between text-xs text-zinc-500 mb-2">
-                    <span>Amount (mock USDC)</span>
+            <div className="atlas-card mb-4 p-5">
+                <div className="mb-2 flex items-center justify-between text-[11px] uppercase tracking-wider text-zinc-500">
+                    <span>Amount (USDC)</span>
                     <span>
-                        Balance:{" "}
+                        Wallet:{" "}
                         <button
                             disabled={!isConnected || usdcBalance === undefined}
-                            onClick={() => setAmount(usdcBalance !== undefined ? formatUnits(usdcBalance, 18) : "")}
-                            className="text-zinc-300 hover:text-white underline underline-offset-2 disabled:opacity-40"
+                            onClick={() =>
+                                setAmount(usdcBalance !== undefined ? formatUnits(usdcBalance, 18) : "")
+                            }
+                            className="text-zinc-300 underline underline-offset-2 hover:text-white disabled:opacity-40"
                         >
                             {usdcDisplay}
                         </button>
@@ -302,38 +319,60 @@ function DepositCard({
                     value={amount}
                     onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
                     placeholder="0.00"
-                    className="w-full bg-transparent text-2xl font-semibold outline-none placeholder:text-zinc-700 tabular-nums"
+                    className="w-full bg-transparent text-3xl font-semibold tabular-nums text-white outline-none placeholder:text-zinc-700"
                 />
+                <div className="mt-2 flex gap-2">
+                    {["100", "1000", "5000"].map((q) => (
+                        <button
+                            key={q}
+                            onClick={() => setAmount(q)}
+                            className="rounded-md border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[11px] text-zinc-400 transition-colors hover:border-white/20 hover:text-white"
+                        >
+                            {q}
+                        </button>
+                    ))}
+                    {usdcBalance !== undefined && (
+                        <button
+                            onClick={() => setAmount(formatUnits(usdcBalance, 18))}
+                            className="rounded-md border border-emerald-500/20 bg-emerald-500/5 px-2.5 py-1 text-[11px] text-emerald-300 transition-colors hover:border-emerald-500/40"
+                        >
+                            MAX
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div className="flex flex-col gap-2">
-                <button
-                    disabled={!isConnected || busy}
+                <SecondaryButton
                     onClick={claimFaucet}
-                    className="rounded-lg py-3 text-sm font-medium border border-zinc-800 hover:border-zinc-600 hover:bg-zinc-900 text-zinc-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    disabled={!isConnected || busy}
+                    size="lg"
                 >
                     {pendingAction === "faucet" ? "Minting…" : "Mint 10,000 test USDC"}
-                </button>
+                </SecondaryButton>
 
                 {needsApprove ? (
-                    <button
-                        disabled={!isConnected || busy || amount === "" || !hasBalance}
+                    <PrimaryButton
                         onClick={approve}
-                        className="rounded-lg py-3 text-sm font-medium border border-emerald-900 hover:border-emerald-700 hover:bg-emerald-950/50 text-emerald-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                        {pendingAction === "approve" ? "Approving…" : `Approve vault to spend USDC`}
-                    </button>
-                ) : (
-                    <button
                         disabled={!isConnected || busy || amount === "" || !hasBalance}
+                        size="lg"
+                    >
+                        {pendingAction === "approve" ? "Approving…" : "Approve vault to spend USDC"}
+                    </PrimaryButton>
+                ) : (
+                    <PrimaryButton
                         onClick={deposit}
-                        className="rounded-lg py-3 text-sm font-medium bg-emerald-500 hover:bg-emerald-400 text-black transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        disabled={!isConnected || busy || amount === "" || !hasBalance}
+                        size="lg"
                     >
                         {pendingAction === "deposit" ? "Depositing…" : "Deposit"}
-                    </button>
+                    </PrimaryButton>
                 )}
+
                 {!isConnected && (
-                    <p className="text-xs text-amber-400 mt-1">Connect a wallet on Unichain Sepolia to deposit.</p>
+                    <p className="mt-1 text-xs text-amber-300">
+                        Connect a wallet on Unichain Sepolia to use this page.
+                    </p>
                 )}
             </div>
         </section>
@@ -364,88 +403,100 @@ function PositionCard({
             : "0.00";
 
     return (
-        <section className="border border-zinc-900 rounded-xl p-6 bg-zinc-950">
-            <h2 className="text-xl font-semibold mb-1">Your position</h2>
-            <p className="text-sm text-zinc-500 mb-5">
-                aLP shares are ERC-4626 tokens. They grow in value at the current coupon rate.
-            </p>
+        <section className="atlas-card-strong p-6">
+            <div className="mb-5 flex items-start justify-between">
+                <div>
+                    <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+                        Your stake
+                    </div>
+                    <h2 className="mt-1 text-xl font-semibold tracking-tight text-white">aLP position</h2>
+                </div>
+                {hasPosition && (
+                    <Chip tone="emerald">
+                        <span className="relative flex h-1.5 w-1.5">
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
+                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                        </span>
+                        Earning
+                    </Chip>
+                )}
+            </div>
 
             {!hasPosition ? (
-                <div className="border border-dashed border-zinc-800 rounded-lg p-8 text-center text-sm text-zinc-500">
-                    No deposit yet. Mint test USDC and deposit to start earning the coupon.
+                <div className="atlas-card flex flex-col items-center justify-center gap-2 border-dashed p-10 text-center">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-300">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="5" width="18" height="14" rx="2" />
+                            <path d="M12 9v6M9 12h6" />
+                        </svg>
+                    </span>
+                    <div className="text-sm text-zinc-400">No deposit yet</div>
+                    <div className="text-[11px] text-zinc-500">Mint test USDC, then deposit to mint aLP shares</div>
                 </div>
             ) : (
                 <>
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                        <Stat label="aLP shares" value={sharesDisplay} />
-                        <Stat label="Claim value (USDC)" value={claimDisplay} accent />
-                        <Stat
+                    <div className="mb-4 grid grid-cols-2 gap-3">
+                        <StatCard label="aLP shares" value={sharesDisplay} />
+                        <StatCard label="Claim value" value={`${claimDisplay} USDC`} tone="emerald" />
+                        <StatCard
                             label="Accrued yield"
                             value={`+${yieldUsd}`}
-                            sub={couponBps ? `at ${(Number(couponBps) / 100).toFixed(2)}% APR` : ""}
+                            hint={couponBps ? `at ${(Number(couponBps) / 100).toFixed(2)}% APR` : ""}
+                            tone="emerald"
                         />
-                        <Stat label="Status" value="Earning" accent />
+                        <StatCard label="Asset" value="USDC" hint="ERC-4626 underlying" />
                     </div>
-                    <button
-                        disabled={busy}
-                        onClick={withdrawAll}
-                        className="w-full rounded-lg py-3 text-sm font-medium border border-zinc-800 hover:border-zinc-600 hover:bg-zinc-900 text-zinc-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                        {pendingAction === "withdraw" ? "Withdrawing…" : "Withdraw all"}
-                    </button>
+                    <SecondaryButton onClick={withdrawAll} disabled={busy} size="lg">
+                        {pendingAction === "withdraw" ? "Withdrawing…" : "Withdraw everything"}
+                    </SecondaryButton>
                 </>
             )}
         </section>
     );
 }
 
-function Stat({label, value, sub, accent}: {label: string; value: string; sub?: string; accent?: boolean}) {
+function Explainer() {
     return (
-        <div className="border border-zinc-900 rounded-lg p-4">
-            <div className="text-xs uppercase tracking-widest text-zinc-500 mb-1">{label}</div>
-            <div className={`text-xl font-semibold tabular-nums ${accent ? "text-emerald-400" : "text-white"}`}>
-                {value}
+        <section className="atlas-card-strong mt-6 p-6">
+            <div className="mb-4">
+                <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+                    What you are seeing
+                </div>
+                <h2 className="mt-1 text-lg font-semibold tracking-tight text-white">The vault flow</h2>
             </div>
-            {sub && <div className="text-xs text-zinc-500 mt-1">{sub}</div>}
-        </div>
-    );
-}
-
-function Tips() {
-    return (
-        <section className="border border-zinc-900 rounded-xl p-6 mt-6 bg-zinc-950">
-            <h2 className="text-base font-semibold mb-2">What you are seeing</h2>
-            <ul className="text-sm text-zinc-400 space-y-2 leading-relaxed">
-                <li>
-                    The mock USDC and mock WETH are local testnet tokens. The vault accepts USDC as the underlying;
-                    mint button bypasses needing a Sepolia faucet for ERC-20 testing.
-                </li>
-                <li>
-                    Deposits mint <code className="text-zinc-300">aLP-WETH-USDC</code> shares. The vault grows
-                    <code className="text-zinc-300">totalAssets</code> at the coupon rate lazily, so your share
-                    value goes up over time without any per-block gas.
-                </li>
-                <li>
-                    Buffer health is the ratio of (vault balance − obligation) to the 30-day forward coupon
-                    obligation. Above 1.5x means the vault is over-funded; below 0.5x triggers the auto pause + coupon halve.
-                </li>
-                <li>
-                    LP-side hedging (perp short via AtlasHook) fires when liquidity is added through the v4
-                    PositionManager. The <code className="text-zinc-300">/compare</code> page demos that flow
-                    end-to-end.
-                </li>
-            </ul>
+            <div className="grid gap-4 sm:grid-cols-2">
+                <ExplainItem
+                    n="01"
+                    title="Mock tokens, real flow"
+                    body="The mock USDC and WETH are local testnet tokens. The mint button gives you 10k test USDC, bypassing the Sepolia faucet."
+                />
+                <ExplainItem
+                    n="02"
+                    title="Deposits mint aLP shares"
+                    body="One transaction transfers USDC to the vault and mints ERC-4626 aLP shares to your wallet. previewRedeem tells you the current claim value."
+                />
+                <ExplainItem
+                    n="03"
+                    title="Shares accrue lazily"
+                    body="totalAssets grows in storage at the coupon rate. No per-block gas. Your previewRedeem goes up over time without any action."
+                />
+                <ExplainItem
+                    n="04"
+                    title="Buffer health protects payouts"
+                    body="Above 1.5x means the vault is over-funded. Below 0.5x triggers auto-pause and a coupon halve until the buffer recovers."
+                />
+            </div>
         </section>
     );
 }
 
-function Footer() {
+function ExplainItem({n, title, body}: {n: string; title: string; body: string}) {
     return (
-        <footer className="border-t border-zinc-900 px-6 py-8 text-xs text-zinc-500">
-            <div className="max-w-5xl mx-auto">
-                Vault {ATLAS.vault} · USDC {ATLAS.usdc} · Hook {ATLAS.hook}
-            </div>
-        </footer>
+        <div className="atlas-card p-5">
+            <div className="font-mono text-xs text-emerald-400">{n}</div>
+            <div className="mt-3 text-sm font-semibold text-white">{title}</div>
+            <div className="mt-1 text-xs leading-relaxed text-zinc-400">{body}</div>
+        </div>
     );
 }
 

@@ -8,6 +8,7 @@ import {parseAbiItem} from "viem";
 import {ATLAS} from "@/lib/contracts";
 import {ATLAS_VAULT_ABI, ERC20_ABI} from "@/lib/abis";
 import {AtlasChat} from "@/components/AtlasChat";
+import {Chip, PageFrame, PrimaryButton, SecondaryButton, Shell, StatCard} from "@/components/Shell";
 
 const DEPOSIT_EVENT = parseAbiItem(
     "event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares)",
@@ -54,11 +55,6 @@ export default function PositionsPage() {
         query: {enabled: !!address, refetchInterval: 10000},
     });
 
-    // Pull historical deposit events for this user from the vault.
-    // We avoid viem's `args:` indexed filter because some public RPCs
-    // (PublicNode included) reject topic-filtered requests with empty
-    // results instead of an error. Instead, query by event signature only
-    // and filter to the user's address client-side.
     useEffect(() => {
         if (!publicClient || !address) return;
         let cancelled = false;
@@ -101,25 +97,21 @@ export default function PositionsPage() {
 
     const totalDeposited = deposits.reduce((sum, d) => sum + d.assets, 0n);
     const claim = (previewRedeem as bigint) ?? 0n;
-    // Only compute yield when we have a known cost basis. With no deposit
-    // history (RPC limits, transferred-in aLP, etc.) the safest answer is
-    // "unknown" rather than reporting the full claim as profit.
     const haveBasis = deposits.length > 0;
     const yieldAmount = haveBasis && claim > totalDeposited ? claim - totalDeposited : 0n;
     const aprStr = couponBps === undefined ? "—" : `${(Number(couponBps) / 100).toFixed(2)}%`;
 
     return (
-        <div className="flex flex-col flex-1">
-            <Header />
-            <main className="flex flex-1 flex-col px-4 sm:px-6 py-6 sm:py-10 max-w-5xl mx-auto w-full">
-                <div className="mb-6 sm:mb-8">
-                    <Link href="/" className="text-xs text-zinc-500 hover:text-white">
-                        ← Back
-                    </Link>
-                    <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight mt-2 mb-2">Your positions</h1>
-                    <p className="text-zinc-400 max-w-2xl text-sm sm:text-base">
-                        aLP shares accrue value at the current coupon rate. Each row below is a deposit you made
-                        into the live vault on Unichain Sepolia.
+        <Shell>
+            <PageFrame>
+                <div className="mb-8">
+                    <Chip tone="emerald">Your stake on Atlas</Chip>
+                    <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+                        Your <span className="atlas-text-emerald-gradient">positions</span>
+                    </h1>
+                    <p className="mt-3 max-w-2xl text-sm text-zinc-400 sm:text-base">
+                        aLP shares accrue value at the live coupon rate. Each row below is a deposit you made into
+                        the vault on Unichain Sepolia.
                     </p>
                 </div>
 
@@ -136,10 +128,10 @@ export default function PositionsPage() {
                             usdcBalance={(usdcBalance as bigint) ?? 0n}
                             haveBasis={haveBasis}
                         />
-                        <DepositHistory deposits={deposits} />
-                        <div className="mt-6">
+                        <div className="mt-6 grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+                            <DepositHistory deposits={deposits} />
                             <AtlasChat
-                                title="Ask Atlas about your position"
+                                title="Ask Atlas"
                                 context={{
                                     page: "/positions",
                                     walletAddress: address,
@@ -147,50 +139,37 @@ export default function PositionsPage() {
                                     claimValueUsdc1e18: claim.toString(),
                                     totalDepositedUsdc1e18: totalDeposited.toString(),
                                     accruedYieldUsdc1e18: yieldAmount.toString(),
-                                    currentCouponBps: couponBps !== undefined ? (couponBps as bigint).toString() : "unknown",
+                                    currentCouponBps:
+                                        couponBps !== undefined ? (couponBps as bigint).toString() : "unknown",
                                     walletUsdc1e18: ((usdcBalance as bigint | undefined) ?? 0n).toString(),
                                     depositCount: deposits.length,
                                 }}
-                                opener="Hi. I can answer questions about your Atlas position using only the live on-chain reads above. Try: 'Is my position earning?' or 'What is the buffer health right now?'"
+                                opener="Hi. I can answer questions about your Atlas position using live on-chain reads. Try: 'How much yield have I earned?' or 'What is the vault buffer health right now?'"
                             />
                         </div>
                     </>
                 )}
 
                 <ActionRow />
-            </main>
-            <Footer />
-        </div>
-    );
-}
-
-function Header() {
-    return (
-        <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-900">
-            <Link href="/" className="text-lg font-semibold tracking-tight">
-                Atlas
-            </Link>
-            <div className="flex items-center gap-4">
-                <Link href="/compare" className="text-sm text-zinc-400 hover:text-white hidden sm:inline">
-                    Compare
-                </Link>
-                <Link href="/deposit" className="text-sm text-zinc-400 hover:text-white hidden sm:inline">
-                    Deposit
-                </Link>
-                <Link href="/activity" className="text-sm text-zinc-400 hover:text-white hidden sm:inline">
-                    Activity
-                </Link>
-                <ConnectButton showBalance={false} chainStatus="icon" />
-            </div>
-        </header>
+            </PageFrame>
+        </Shell>
     );
 }
 
 function ConnectCallout() {
     return (
-        <div className="border border-zinc-900 rounded-xl p-8 bg-zinc-950 text-center">
-            <p className="text-zinc-400 mb-4">Connect your wallet to view your aLP positions and deposit history.</p>
-            <div className="flex justify-center">
+        <div className="atlas-card-strong flex flex-col items-center justify-center gap-3 p-12 text-center">
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-300">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" />
+                    <path d="M7 11V7a5 5 0 0110 0v4" />
+                </svg>
+            </span>
+            <div className="text-base font-semibold text-white">Wallet not connected</div>
+            <div className="max-w-md text-sm text-zinc-400">
+                Connect a wallet on Unichain Sepolia to load your aLP shares and deposit history.
+            </div>
+            <div className="mt-2">
                 <ConnectButton />
             </div>
         </div>
@@ -215,80 +194,76 @@ function Summary({
     haveBasis: boolean;
 }) {
     const hasPosition = shares > 0n;
-    const yieldValue = !hasPosition
-        ? "—"
-        : haveBasis
-          ? `+${fmt(yieldAmount, 4)}`
-          : "—";
-    const yieldSub = !hasPosition
+    const yieldValue = !hasPosition ? "—" : haveBasis ? `+${fmt(yieldAmount, 4)}` : "—";
+    const yieldHint = !hasPosition
         ? ""
         : haveBasis
           ? `at ${apr} · cost basis ${fmt(deposited, 2)} USDC`
           : "Deposit history not yet indexed";
-    return (
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Stat label="aLP shares" value={hasPosition ? fmt(shares, 4) : "—"} />
-            <Stat label="Claim value" value={hasPosition ? `${fmt(claim, 2)} USDC` : "—"} accent={hasPosition} />
-            <Stat label="Accrued yield" value={yieldValue} sub={yieldSub} />
-            <Stat label="USDC wallet" value={`${fmt(usdcBalance, 2)}`} sub="mock test USDC" />
-        </section>
-    );
-}
 
-function Stat({label, value, sub, accent}: {label: string; value: string; sub?: string; accent?: boolean}) {
     return (
-        <div className="border border-zinc-900 rounded-lg p-4 bg-zinc-950">
-            <div className="text-xs uppercase tracking-widest text-zinc-500 mb-1">{label}</div>
-            <div className={`text-xl font-semibold tabular-nums ${accent ? "text-emerald-400" : "text-white"}`}>
-                {value}
-            </div>
-            {sub && <div className="text-xs text-zinc-500 mt-1">{sub}</div>}
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+            <StatCard label="aLP shares" value={hasPosition ? fmt(shares, 4) : "—"} hint="ERC-4626 token balance" />
+            <StatCard
+                label="Claim value"
+                value={hasPosition ? `${fmt(claim, 2)} USDC` : "—"}
+                hint="Live previewRedeem read"
+                tone="emerald"
+            />
+            <StatCard label="Accrued yield" value={yieldValue} hint={yieldHint} tone="emerald" />
+            <StatCard label="USDC wallet" value={fmt(usdcBalance, 2)} hint="Mock test USDC" />
         </div>
     );
 }
 
 function DepositHistory({deposits}: {deposits: DepositRecord[]}) {
     return (
-        <section className="border border-zinc-900 rounded-xl p-6 mt-6 bg-zinc-950">
-            <h2 className="text-xl font-semibold mb-1">Deposit history</h2>
-            <p className="text-sm text-zinc-500 mb-5">
-                Pulled from the vault&apos;s on-chain <code className="text-zinc-300">Deposit(address,address,uint256,uint256)</code>{" "}
-                events. Most recent on top.
-            </p>
+        <section className="atlas-card-strong p-6">
+            <div className="mb-4 flex items-center justify-between">
+                <div>
+                    <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+                        On-chain log
+                    </div>
+                    <h2 className="mt-1 text-lg font-semibold tracking-tight text-white">Deposit history</h2>
+                </div>
+                <span className="font-mono text-[11px] text-zinc-500">{deposits.length} deposits</span>
+            </div>
+
             {deposits.length === 0 ? (
-                <div className="border border-dashed border-zinc-800 rounded-lg p-8 text-center text-sm text-zinc-500">
-                    No deposits yet from this wallet. Visit{" "}
-                    <Link href="/deposit" className="underline underline-offset-2 hover:text-white">
-                        /deposit
-                    </Link>{" "}
-                    to mint test USDC and make your first deposit.
+                <div className="atlas-card flex flex-col items-center gap-2 border-dashed p-10 text-center">
+                    <div className="text-sm text-zinc-400">No deposits yet</div>
+                    <div className="text-[11px] text-zinc-500">
+                        Visit{" "}
+                        <Link href="/deposit" className="underline underline-offset-2 hover:text-white">
+                            /deposit
+                        </Link>{" "}
+                        to mint test USDC and make your first deposit
+                    </div>
                 </div>
             ) : (
-                <ul className="divide-y divide-zinc-900 border border-zinc-900 rounded-lg overflow-hidden">
+                <ul className="atlas-card divide-y divide-white/[0.04] overflow-hidden">
                     {deposits.map((d) => (
                         <li
                             key={d.txHash}
-                            className="px-4 py-3 flex items-center justify-between gap-4 text-sm"
+                            className="atlas-fade-in flex items-center justify-between gap-4 px-4 py-3.5 transition-colors hover:bg-white/[0.02]"
                         >
                             <div>
-                                <div className="font-medium text-zinc-200 tabular-nums">
-                                    +{fmt(d.assets, 2)} USDC
-                                </div>
-                                <div className="text-xs text-zinc-500">
+                                <div className="font-semibold tabular-nums text-emerald-300">+{fmt(d.assets, 2)} USDC</div>
+                                <div className="mt-0.5 text-[11px] text-zinc-500">
                                     {relativeTime(Math.floor(Date.now() / 1000) - d.timestamp)} ·{" "}
                                     <a
                                         href={`https://sepolia.uniscan.xyz/tx/${d.txHash}`}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="underline underline-offset-2 hover:text-zinc-300"
+                                        className="font-mono underline underline-offset-2 hover:text-zinc-300"
                                     >
                                         {short(d.txHash)}
                                     </a>
                                 </div>
                             </div>
-                            <div className="text-right text-xs text-zinc-500">
-                                <div>{fmt(d.shares, 4)} aLP</div>
-                                <div>shares minted</div>
+                            <div className="text-right">
+                                <div className="font-mono text-sm text-zinc-200">{fmt(d.shares, 4)}</div>
+                                <div className="text-[10px] text-zinc-500">aLP minted</div>
                             </div>
                         </li>
                     ))}
@@ -300,30 +275,14 @@ function DepositHistory({deposits}: {deposits: DepositRecord[]}) {
 
 function ActionRow() {
     return (
-        <section className="mt-6 flex flex-col sm:flex-row gap-3">
-            <Link
-                href="/deposit"
-                className="flex-1 rounded-lg py-3 text-sm font-medium bg-emerald-500 hover:bg-emerald-400 text-black text-center transition-colors"
-            >
-                Add to position
-            </Link>
-            <Link
-                href="/compare"
-                className="flex-1 rounded-lg py-3 text-sm font-medium border border-zinc-800 hover:border-zinc-600 text-zinc-300 text-center transition-colors"
-            >
-                See the hedge in action
-            </Link>
-        </section>
-    );
-}
-
-function Footer() {
-    return (
-        <footer className="border-t border-zinc-900 px-6 py-8 text-xs text-zinc-500">
-            <div className="max-w-5xl mx-auto">
-                Vault {ATLAS.vault} · USDC {ATLAS.usdc}
-            </div>
-        </footer>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <PrimaryButton href="/deposit" size="lg">
+                Add to your position
+            </PrimaryButton>
+            <SecondaryButton href="/compare" size="lg">
+                See the hedge in action →
+            </SecondaryButton>
+        </div>
     );
 }
 

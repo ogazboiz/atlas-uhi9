@@ -100,9 +100,24 @@ export function HedgeConfidenceGauge() {
     });
 
     return (
-        <section className="border border-zinc-900 rounded-xl p-6 bg-zinc-950">
-            <div className="flex flex-col md:flex-row gap-6 items-center">
+        <section className="atlas-card-strong relative overflow-hidden p-6">
+            <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-violet-500/10 blur-3xl" />
+            <div className="relative">
+                <div className="mb-4 flex items-center justify-between">
+                    <div>
+                        <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+                            AI signal
+                        </div>
+                        <h2 className="mt-1 text-lg font-semibold tracking-tight text-white">
+                            Hedge Confidence
+                        </h2>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-500/25 bg-violet-500/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-violet-300">
+                        Ensemble · 4 signals
+                    </span>
+                </div>
                 <Gauge result={result} />
+                <div className="my-5 atlas-divider" />
                 <Breakdown result={result} />
             </div>
         </section>
@@ -130,11 +145,8 @@ function Gauge({result}: {result: ConfidenceResult}) {
     const largeArcFlag = 0; // semi-arc, never > 180
 
     return (
-        <div className="flex flex-col items-center shrink-0">
-            <div className="text-xs uppercase tracking-widest text-zinc-500 mb-2">
-                AI Hedge Confidence
-            </div>
-            <svg width="220" height="140" viewBox="0 0 200 120">
+        <div className="flex flex-col items-center">
+            <svg width="280" height="170" viewBox="0 0 200 120">
                 {/* Background semicircle */}
                 <path
                     d={`M ${startX} ${cy} A ${r} ${r} 0 ${largeArcFlag} 1 ${endX} ${cy}`}
@@ -176,38 +188,35 @@ function Gauge({result}: {result: ConfidenceResult}) {
                     {result.tier}
                 </text>
             </svg>
-            <div className="text-xs text-zinc-500 mt-1 max-w-[220px] text-center">
-                Composite of 4 on-chain signals
-            </div>
         </div>
     );
 }
 
 function Breakdown({result}: {result: ConfidenceResult}) {
     return (
-        <div className="flex-1 w-full min-w-0">
-            <h3 className="text-base font-semibold mb-1">Hedge confidence breakdown</h3>
-            <p className="text-xs text-zinc-500 mb-4">{result.summary}</p>
-            <ul className="space-y-2">
+        <div className="w-full">
+            <p className="mb-4 text-xs text-zinc-400">{result.summary}</p>
+            <ul className="space-y-3">
                 {result.components.map((c) => (
                     <li key={c.label}>
-                        <div className="flex items-baseline justify-between gap-2 mb-1 text-sm">
-                            <span className="text-zinc-300">{c.label}</span>
-                            <span className="text-zinc-400 tabular-nums text-xs">
-                                {Math.round(c.value)}/100 · weight {Math.round(c.weight * 100)}%
+                        <div className="mb-1.5 flex items-baseline justify-between gap-2 text-sm">
+                            <span className="text-zinc-200">{c.label}</span>
+                            <span className="font-mono text-[11px] tabular-nums text-zinc-500">
+                                {Math.round(c.value)}/100 · w{Math.round(c.weight * 100)}%
                             </span>
                         </div>
-                        <div className="h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+                        <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.04]">
                             <div
                                 className="h-full rounded-full"
                                 style={{
                                     width: `${c.value}%`,
                                     backgroundColor: tierColor(c.value),
+                                    boxShadow: `0 0 12px ${tierColor(c.value)}66`,
                                     transition: "width 0.6s ease, background-color 0.6s ease",
                                 }}
                             />
                         </div>
-                        <div className="text-xs text-zinc-500 mt-1">{c.detail}</div>
+                        <div className="mt-1 text-[11px] text-zinc-500">{c.detail}</div>
                     </li>
                 ))}
             </ul>

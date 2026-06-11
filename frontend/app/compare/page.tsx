@@ -1,9 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
-import {ConnectButton} from "@rainbow-me/rainbowkit";
-import {useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt} from "wagmi";
+import {useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract} from "wagmi";
 import {formatUnits, parseUnits} from "viem";
 import {ATLAS} from "@/lib/contracts";
 import {MOCK_ORACLE_ABI} from "@/lib/abis";
@@ -11,9 +9,9 @@ import {PriceChart, type ChartPoint} from "@/components/PriceChart";
 import {ReactiveStatus} from "@/components/ReactiveStatus";
 import {ReactiveEventFeed} from "@/components/ReactiveEventFeed";
 import {HedgeConfidenceGauge} from "@/components/HedgeConfidenceGauge";
+import {Chip, PageFrame, SectionHeader, Shell, StatCard} from "@/components/Shell";
 
 /// Initial LP composition for the chart: 1 ETH + 3500 USDC.
-/// Vanilla value = ETH_qty * price + USDC_qty; Atlas value stays flat (delta-neutral).
 const ETH_QTY = 1;
 const USDC_QTY = 3500;
 const ATLAS_FLAT_VALUE = ETH_QTY * 3500 + USDC_QTY; // $7000
@@ -24,7 +22,6 @@ export default function ComparePage() {
     const [busy, setBusy] = useState(false);
     const seedTime = useRef<number | null>(null);
 
-    // Live oracle read, polled every 4 seconds.
     const {data: rawPrice} = useReadContract({
         address: ATLAS.oracle,
         abi: MOCK_ORACLE_ABI,
@@ -37,12 +34,10 @@ export default function ComparePage() {
         return Number(formatUnits(rawPrice as bigint, 18));
     }, [rawPrice]);
 
-    // Push a new point whenever the price changes (or on first read).
     useEffect(() => {
         if (currentPrice === null) return;
         const now = Math.floor(Date.now() / 1000);
         if (seedTime.current === null) {
-            // Seed a flat baseline so the chart isn't a single dot on first load.
             const baseline: ChartPoint[] = [];
             for (let i = 30; i > 0; i--) {
                 baseline.push({
@@ -55,7 +50,7 @@ export default function ComparePage() {
             setPoints(baseline);
             return;
         }
-        setPoints((prev: ChartPoint[]) => {
+        setPoints((prev) => {
             const last = prev[prev.length - 1];
             const t = Math.max(now, (last?.time ?? now) + 1);
             return [...prev, {time: t, vanilla: ETH_QTY * currentPrice + USDC_QTY, atlas: ATLAS_FLAT_VALUE}];
@@ -65,11 +60,13 @@ export default function ComparePage() {
     const {writeContractAsync} = useWriteContract();
     const [pendingTx, setPendingTx] = useState<`0x${string}` | undefined>();
     const {isLoading: txMining} = useWaitForTransactionReceipt({hash: pendingTx});
+    const [lastTrigger, setLastTrigger] = useState<number | null>(null);
 
     const triggerVolatility = useCallback(
         async (deltaPct: number) => {
             if (!currentPrice || busy || !isConnected) return;
             setBusy(true);
+            setLastTrigger(deltaPct);
             try {
                 const newPrice = currentPrice * (1 + deltaPct / 100);
                 const hash = await writeContractAsync({
@@ -87,12 +84,10 @@ export default function ComparePage() {
         [currentPrice, busy, isConnected, writeContractAsync],
     );
 
-    // Reset busy flag once tx confirms.
     useEffect(() => {
         if (!txMining && pendingTx && busy) setBusy(false);
     }, [txMining, pendingTx, busy]);
 
-    // Keyboard shortcuts: 1=Dump 15%, 2=Dump 5%, 3=Pump 5%, 4=Pump 15%.
     useEffect(() => {
         function handle(e: KeyboardEvent) {
             if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -109,120 +104,130 @@ export default function ComparePage() {
 
     const vanillaValue = currentPrice !== null ? ETH_QTY * currentPrice + USDC_QTY : null;
     const drawdown = vanillaValue !== null ? ((vanillaValue - ATLAS_FLAT_VALUE) / ATLAS_FLAT_VALUE) * 100 : null;
+    const atlasAhead = drawdown !== null && drawdown < 0; // vanilla below atlas = atlas ahead
 
     return (
-        <div className="flex flex-col flex-1">
-            <Header />
-            <main className="flex flex-1 flex-col px-4 sm:px-6 py-6 sm:py-10 max-w-6xl mx-auto w-full">
-                <div className="mb-6 sm:mb-8">
-                    <Link href="/" className="text-xs text-zinc-500 hover:text-white">
-                        ← Back
-                    </Link>
-                    <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight mt-2 mb-2">
-                        Atlas vs Vanilla LP
+        <Shell>
+            <PageFrame>
+                <div className="mb-8">
+                    <Chip tone="emerald">
+                        <span className="relative flex h-1.5 w-1.5">
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
+                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                        </span>
+                        Live on Unichain Sepolia
+                    </Chip>
+                    <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+                        Atlas vs <span className="text-zinc-500">Vanilla LP</span>
                     </h1>
-                    <p className="text-zinc-400 max-w-2xl text-sm sm:text-base">
-                        Both lines start at $7,000 (1 ETH + 3500 USDC). The Atlas line is delta-hedged so it stays
-                        flat; the vanilla line tracks the volatile asset. Trigger a price move below to see the
-                        divergence open up in real time.
+                    <p className="mt-3 max-w-2xl text-sm text-zinc-400 sm:text-base">
+                        Both positions start at $7,000 (1 ETH + 3500 USDC). The Atlas position is delta-hedged so
+                        it stays flat. The vanilla position tracks ETH price. Press <Kbd>1</Kbd> to dump 15% and
+                        watch the divergence open up live.
                     </p>
                 </div>
 
-                <div className="lg:sticky lg:top-0 z-10 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-black/80 backdrop-blur-md border-b border-zinc-900">
-                    <StatsBar
+                {/* Sticky stats bar */}
+                <div className="sticky top-16 z-20 -mx-6 mb-6 border-b border-white/[0.06] bg-[#050608]/85 px-6 py-4 backdrop-blur-xl">
+                    <StatsRow
                         currentPrice={currentPrice}
                         vanillaValue={vanillaValue}
                         atlasValue={ATLAS_FLAT_VALUE}
                         drawdownPct={drawdown}
+                        atlasAhead={atlasAhead}
                     />
                 </div>
 
-                <div className="mt-6">
+                {/* Main grid: gauge | chart */}
+                <div className="grid gap-4 lg:grid-cols-[1fr_1.6fr]">
                     <HedgeConfidenceGauge />
+                    <ChartPanel points={points} />
                 </div>
 
-                <section className="border border-zinc-900 rounded-xl p-6 mt-6 bg-zinc-950">
-                    <PriceChart data={points} />
-                    <div className="flex gap-6 text-xs text-zinc-500 mt-4">
-                        <Legend color="#10b981" label="Atlas LP (hedged)" />
-                        <Legend color="#71717a" label="Vanilla LP (unhedged)" />
-                    </div>
-                </section>
+                {/* Trigger panel */}
+                <div className="mt-4">
+                    <TriggerPanel
+                        onTrigger={triggerVolatility}
+                        busy={busy || txMining}
+                        isConnected={isConnected}
+                        currentPrice={currentPrice}
+                        lastTrigger={lastTrigger}
+                    />
+                </div>
 
-                <TriggerPanel
-                    onTrigger={triggerVolatility}
-                    busy={busy || txMining}
-                    isConnected={isConnected}
-                    currentPrice={currentPrice}
-                />
-
-                <ReactiveStatus />
-                <ReactiveEventFeed />
-            </main>
-            <Footer />
-        </div>
+                {/* Reactive subscription panel + event feed */}
+                <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                    <ReactiveStatus />
+                    <ReactiveEventFeed />
+                </div>
+            </PageFrame>
+        </Shell>
     );
 }
 
-function Header() {
-    return (
-        <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-900">
-            <Link href="/" className="text-lg font-semibold tracking-tight">
-                Atlas
-            </Link>
-            <ConnectButton showBalance={false} chainStatus="icon" />
-        </header>
-    );
-}
+// ---------------------------------------------------------------------------
+// Sticky stats row
+// ---------------------------------------------------------------------------
 
-function StatsBar({
+function StatsRow({
     currentPrice,
     vanillaValue,
     atlasValue,
     drawdownPct,
+    atlasAhead,
 }: {
     currentPrice: number | null;
     vanillaValue: number | null;
     atlasValue: number;
     drawdownPct: number | null;
+    atlasAhead: boolean;
 }) {
     return (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Stat label="ETH price (oracle)" value={currentPrice !== null ? `$${currentPrice.toFixed(2)}` : "—"} />
-            <Stat label="Vanilla LP value" value={vanillaValue !== null ? `$${vanillaValue.toFixed(2)}` : "—"} />
-            <Stat label="Atlas LP value" value={`$${atlasValue.toFixed(2)}`} accent />
-            <Stat
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+            <StatCard
+                label="ETH price (oracle)"
+                value={currentPrice !== null ? `$${currentPrice.toFixed(2)}` : "—"}
+                hint="Updates the demo loop"
+                tone="sky"
+            />
+            <StatCard
+                label="Vanilla LP value"
+                value={vanillaValue !== null ? `$${vanillaValue.toFixed(2)}` : "—"}
+                hint="Half ETH, half USDC, unhedged"
+                tone={atlasAhead ? "rose" : "default"}
+            />
+            <StatCard
+                label="Atlas LP value"
+                value={`$${atlasValue.toFixed(2)}`}
+                hint="Delta-neutral, flat by design"
+                tone="emerald"
+            />
+            <StatCard
                 label="Atlas vs vanilla"
                 value={
-                    drawdownPct !== null ? `${drawdownPct > 0 ? "+" : ""}${(-drawdownPct).toFixed(2)}%` : "—"
+                    drawdownPct !== null
+                        ? `${atlasAhead ? "+" : ""}${(-drawdownPct).toFixed(2)}%`
+                        : "—"
                 }
-                accent={drawdownPct !== null && drawdownPct < 0}
-                negative={drawdownPct !== null && drawdownPct > 0}
+                hint={atlasAhead ? "Atlas is outperforming" : "Vanilla is ahead (briefly)"}
+                tone={atlasAhead ? "emerald" : "rose"}
             />
         </div>
     );
 }
 
-function Stat({
-    label,
-    value,
-    accent,
-    negative,
-}: {
-    label: string;
-    value: string;
-    accent?: boolean;
-    negative?: boolean;
-}) {
+function ChartPanel({points}: {points: ChartPoint[]}) {
     return (
-        <div className="border border-zinc-900 rounded-lg p-4">
-            <div className="text-xs uppercase tracking-widest text-zinc-500 mb-1">{label}</div>
-            <div
-                className={`text-2xl font-semibold ${
-                    accent ? "text-emerald-400" : negative ? "text-rose-400" : "text-white"
-                }`}
-            >
-                {value}
+        <div className="atlas-card-strong p-5">
+            <SectionHeader
+                eyebrow="Live chart"
+                title="Position value over time"
+                subtitle="Each new tick is an oracle read from on-chain. Pressing a trigger fires a setPrice tx and adds a step."
+            />
+            <PriceChart data={points} />
+            <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-xs text-zinc-500">
+                <Legend color="#10b981" label="Atlas LP (hedged)" />
+                <Legend color="#71717a" label="Vanilla LP (unhedged)" />
             </div>
         </div>
     );
@@ -230,76 +235,96 @@ function Stat({
 
 function Legend({color, label}: {color: string; label: string}) {
     return (
-        <div className="flex items-center gap-2">
-            <span className="inline-block w-3 h-3 rounded-full" style={{backgroundColor: color}} />
-            <span>{label}</span>
-        </div>
+        <span className="inline-flex items-center gap-2">
+            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{backgroundColor: color}} />
+            {label}
+        </span>
     );
 }
+
+// ---------------------------------------------------------------------------
+// Trigger panel
+// ---------------------------------------------------------------------------
 
 function TriggerPanel({
     onTrigger,
     busy,
     isConnected,
     currentPrice,
+    lastTrigger,
 }: {
     onTrigger: (deltaPct: number) => void;
     busy: boolean;
     isConnected: boolean;
     currentPrice: number | null;
+    lastTrigger: number | null;
 }) {
-    const buttons: {pct: number; label: string; hint: string; tone: "danger" | "muted" | "accent"}[] = [
-        {pct: -15, label: "Dump 15%", hint: "1", tone: "danger"},
+    const buttons: {pct: number; label: string; hint: string; tone: "rose" | "muted" | "emerald"}[] = [
+        {pct: -15, label: "Dump 15%", hint: "1", tone: "rose"},
         {pct: -5, label: "Dump 5%", hint: "2", tone: "muted"},
         {pct: 5, label: "Pump 5%", hint: "3", tone: "muted"},
-        {pct: 15, label: "Pump 15%", hint: "4", tone: "accent"},
+        {pct: 15, label: "Pump 15%", hint: "4", tone: "emerald"},
     ];
 
     return (
-        <section className="border border-zinc-900 rounded-xl p-6 mt-6 bg-zinc-950">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+        <section className="atlas-card-strong p-6">
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h2 className="text-xl font-semibold">Trigger volatility</h2>
-                    <p className="text-sm text-zinc-500 mt-1">
-                        Calls <code className="text-zinc-300">setPrice()</code> on the on-chain oracle. The chart
-                        updates within a few seconds of the transaction confirming.
+                    <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+                        Demo controls
+                    </div>
+                    <h2 className="text-xl font-semibold tracking-tight text-white">Trigger volatility</h2>
+                    <p className="mt-1.5 max-w-xl text-sm text-zinc-400">
+                        Each button fires one <span className="font-mono text-zinc-300">setPrice()</span> tx on the
+                        Atlas oracle. The chart updates within seconds. ~15-20 seconds later the Reactive Network
+                        callback lands.
                     </p>
                 </div>
-                {!isConnected && <span className="text-xs text-amber-400">Connect a wallet to trigger</span>}
+                {!isConnected && (
+                    <span className="inline-flex items-center gap-2 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-300">
+                        <Dot color="#fbbf24" /> Connect wallet to trigger
+                    </span>
+                )}
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {buttons.map((b) => (
-                    <button
-                        key={b.pct}
-                        disabled={!isConnected || busy || currentPrice === null}
-                        onClick={() => onTrigger(b.pct)}
-                        className={`
-                            relative rounded-lg py-3 text-sm font-medium border transition-colors
-                            disabled:opacity-40 disabled:cursor-not-allowed
-                            ${
-                                b.tone === "danger"
-                                    ? "border-rose-900 hover:border-rose-700 hover:bg-rose-950/50 text-rose-300"
-                                    : b.tone === "accent"
-                                      ? "border-emerald-900 hover:border-emerald-700 hover:bg-emerald-950/50 text-emerald-300"
-                                      : "border-zinc-800 hover:border-zinc-600 hover:bg-zinc-900 text-zinc-300"
-                            }
-                        `}
-                    >
-                        {b.label}
-                        <kbd className="absolute top-1 right-2 text-[10px] text-zinc-500 font-mono">{b.hint}</kbd>
-                    </button>
-                ))}
+
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {buttons.map((b) => {
+                    const active = lastTrigger === b.pct && busy;
+                    const toneClass =
+                        b.tone === "rose"
+                            ? "border-rose-500/30 text-rose-200 hover:border-rose-500/60 hover:bg-rose-500/10"
+                            : b.tone === "emerald"
+                              ? "border-emerald-500/30 text-emerald-200 hover:border-emerald-500/60 hover:bg-emerald-500/10"
+                              : "border-white/10 text-zinc-200 hover:border-white/25 hover:bg-white/[0.04]";
+                    return (
+                        <button
+                            key={b.pct}
+                            disabled={!isConnected || busy || currentPrice === null}
+                            onClick={() => onTrigger(b.pct)}
+                            className={`group relative flex flex-col items-center justify-center gap-1.5 rounded-xl border px-4 py-4 text-sm font-medium transition-all disabled:cursor-not-allowed disabled:opacity-40 ${toneClass} ${active ? "ring-2 ring-emerald-400/60" : ""}`}
+                        >
+                            <span className="text-base font-semibold">{b.label}</span>
+                            <span className="text-[10px] uppercase tracking-wider text-zinc-500">
+                                press <kbd className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-zinc-300">{b.hint}</kbd>
+                            </span>
+                            {active && (
+                                <span className="absolute right-2 top-2 inline-flex h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                            )}
+                        </button>
+                    );
+                })}
             </div>
-            <p className="text-xs text-zinc-500 mt-3">
+
+            <p className="mt-4 text-xs text-zinc-500">
                 {busy ? (
-                    <>Waiting for tx confirmation...</>
+                    <span className="inline-flex items-center gap-2 text-emerald-400">
+                        <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+                        Transaction pending. Chart will update once the new price is on-chain.
+                    </span>
                 ) : (
                     <>
-                        Tip: press <kbd className="px-1 py-0.5 rounded bg-zinc-900 text-zinc-300 font-mono">1</kbd>{" "}
-                        <kbd className="px-1 py-0.5 rounded bg-zinc-900 text-zinc-300 font-mono">2</kbd>{" "}
-                        <kbd className="px-1 py-0.5 rounded bg-zinc-900 text-zinc-300 font-mono">3</kbd>{" "}
-                        <kbd className="px-1 py-0.5 rounded bg-zinc-900 text-zinc-300 font-mono">4</kbd> to trigger
-                        without leaving the keyboard.
+                        Keyboard shortcuts <Kbd>1</Kbd> <Kbd>2</Kbd> <Kbd>3</Kbd> <Kbd>4</Kbd> map to the four
+                        buttons left-to-right.
                     </>
                 )}
             </p>
@@ -307,12 +332,14 @@ function TriggerPanel({
     );
 }
 
-function Footer() {
+function Kbd({children}: {children: React.ReactNode}) {
     return (
-        <footer className="border-t border-zinc-900 px-6 py-8 text-xs text-zinc-500">
-            <div className="max-w-6xl mx-auto">
-                Oracle: {ATLAS.oracle} · Vault: {ATLAS.vault} · Hook: {ATLAS.hook}
-            </div>
-        </footer>
+        <kbd className="rounded border border-white/15 bg-white/[0.04] px-1.5 py-0.5 font-mono text-[11px] text-zinc-200">
+            {children}
+        </kbd>
     );
+}
+
+function Dot({color}: {color: string}) {
+    return <span className="inline-block h-1.5 w-1.5 rounded-full" style={{background: color}} />;
 }
