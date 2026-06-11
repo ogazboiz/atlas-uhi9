@@ -4,11 +4,25 @@
     --background: #050608;
     --foreground: #f4f4f5;
 
-    /* Atlas brand palette */
+    /* Atlas brand palette — distinctive choice.
+       Most defi products use emerald or electric blue. Both feel default.
+       Atlas's primary is CITRUS AMBER: signals "gold standard of yield",
+       premium investment-grade, almost zero use in defi. Pairs cleanly
+       with the secondary palette without semantic conflict.
+
+       Primary    = amber       (Atlas brand, CTAs, headline gradient)
+       Emerald    = "you win"   (yield earned, hedge succeeded, stats)
+       Rose       = "you lose"  (vanilla LP, drawdown, errors)
+       Sky        = "the loop"  (cross-chain, reactive, oracle)
+       Violet     = decorative  (gradients only, never UI accents) */
+    --atlas-primary: #fbbf24;       /* amber-400 — primary highlight */
+    --atlas-primary-deep: #f59e0b;  /* amber-500 — primary base */
+    --atlas-primary-soft: #fef3c7;  /* amber-100 — text gradient top */
+    --atlas-primary-glow: rgba(251, 191, 36, 0.16);
     --atlas-emerald: #10b981;
-    --atlas-emerald-glow: rgba(16, 185, 129, 0.16);
+    --atlas-emerald-glow: rgba(16, 185, 129, 0.14);
     --atlas-violet: #a78bfa;
-    --atlas-violet-glow: rgba(167, 139, 250, 0.14);
+    --atlas-violet-glow: rgba(167, 139, 250, 0.08);
     --atlas-sky: #38bdf8;
     --atlas-sky-glow: rgba(56, 189, 248, 0.14);
     --atlas-rose: #fb7185;
@@ -32,8 +46,8 @@
 
 body {
     background:
-        radial-gradient(1200px 600px at 50% -10%, rgba(167, 139, 250, 0.08), transparent 55%),
-        radial-gradient(900px 500px at 100% 100%, rgba(16, 185, 129, 0.06), transparent 60%),
+        radial-gradient(1200px 600px at 50% -10%, rgba(251, 191, 36, 0.06), transparent 55%),
+        radial-gradient(900px 500px at 100% 100%, rgba(16, 185, 129, 0.05), transparent 60%),
         radial-gradient(900px 500px at 0% 100%, rgba(56, 189, 248, 0.05), transparent 60%),
         var(--background);
     background-attachment: fixed;
@@ -78,6 +92,19 @@ body {
         -webkit-background-clip: text;
         background-clip: text;
         color: transparent;
+    }
+    /* Primary brand text gradient — citrus amber (warm to deep) */
+    .atlas-text-primary-gradient {
+        background: linear-gradient(180deg, #fef3c7 0%, #fbbf24 55%, #f59e0b 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    /* Display font for hero headlines per Taste Skill */
+    .atlas-display {
+        font-family: var(--font-display), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+        letter-spacing: -0.025em;
+        font-feature-settings: "ss01", "cv11";
     }
     .atlas-grid-bg {
         background-image:

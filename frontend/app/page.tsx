@@ -48,7 +48,7 @@ function Hero() {
     return (
         <section className="relative overflow-hidden">
             <div className="absolute inset-x-0 top-0 -z-10 h-[680px] atlas-grid-bg opacity-30" />
-            <div className="absolute left-[-10%] top-[10%] -z-10 h-[420px] w-[600px] rounded-full bg-emerald-500/[0.07] blur-[120px]" />
+            <div className="absolute left-[-10%] top-[10%] -z-10 h-[420px] w-[600px] rounded-full bg-amber-500/[0.06] blur-[120px]" />
             <div className="absolute right-[-5%] top-[40%] -z-10 h-[340px] w-[500px] rounded-full bg-sky-500/[0.05] blur-[100px]" />
 
             <PageFrame>
@@ -66,10 +66,10 @@ function Hero() {
                         </StaggerItem>
 
                         <StaggerItem>
-                            <h1 className="mt-6 text-[44px] font-semibold leading-[1.02] tracking-[-0.025em] sm:text-[56px] md:text-[68px]">
+                            <h1 className="atlas-display mt-6 text-[44px] font-semibold leading-[1.02] sm:text-[58px] md:text-[72px]">
                                 <span className="atlas-text-gradient">Hedged LP yield.</span>
                                 <br />
-                                <span className="atlas-text-emerald-gradient">Autonomous. Fixed APR.</span>
+                                <span className="atlas-text-primary-gradient">Autonomous. Fixed APR.</span>
                             </h1>
                         </StaggerItem>
 
@@ -96,7 +96,7 @@ function Hero() {
                         <StaggerItem>
                             <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-[0.14em] text-zinc-500">
                                 <span className="flex items-center gap-1.5">
-                                    <Dot color="#10b981" /> 6 verified contracts
+                                    <Dot color="#38bdf8" /> 6 verified contracts
                                 </span>
                                 <span className="flex items-center gap-1.5">
                                     <Dot color="#38bdf8" /> 15-20s loop
@@ -111,10 +111,10 @@ function Hero() {
                     {/* Right column — interactive blob + impact controls */}
                     <FadeIn delay={0.15} y={6} className="relative">
                         <div className="atlas-card-strong relative overflow-hidden">
-                            <div className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-emerald-300">
+                            <div className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-500/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-amber-200">
                                 <span className="relative flex h-1.5 w-1.5">
-                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-                                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-300 opacity-70" />
+                                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-300" />
                                 </span>
                                 Drag me
                             </div>

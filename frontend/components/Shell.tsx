@@ -55,7 +55,7 @@ function Header() {
                             >
                                 {item.label}
                                 {active && (
-                                    <span className="absolute inset-x-3 -bottom-px h-px bg-gradient-to-r from-transparent via-emerald-400 to-transparent" />
+                                    <span className="absolute inset-x-3 -bottom-px h-px bg-gradient-to-r from-transparent via-amber-400 to-transparent" />
                                 )}
                             </Link>
                         );
@@ -118,8 +118,9 @@ export function AtlasMark({size = 18}: {size?: number}) {
             style={{
                 width: size + 6,
                 height: size + 6,
-                background: "linear-gradient(135deg, #10b981 0%, #38bdf8 60%, #a78bfa 100%)",
-                boxShadow: "0 0 18px -4px rgba(16, 185, 129, 0.55)",
+                background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 55%, #38bdf8 100%)",
+                boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.30), 0 1px 2px rgba(0,0,0,0.45)",
             }}
         >
             <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -163,7 +164,7 @@ export function SectionHeader({
                         {eyebrow}
                     </div>
                 )}
-                <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">{title}</h2>
+                <h2 className="atlas-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">{title}</h2>
                 {subtitle && <p className="mt-1.5 max-w-2xl text-sm text-zinc-400">{subtitle}</p>}
             </div>
             {action && <div className="mt-3 sm:mt-0">{action}</div>}
@@ -240,13 +241,14 @@ export function PrimaryButton({
         md: "px-5 py-2.5 text-sm",
         lg: "px-6 py-3.5 text-[15px]",
     };
-    // Taste Skill anti-slop: no neon outer glows. Inner highlight + tinted
-    // tinted-to-background shadow instead. Emil's rule: scale(0.97) on :active.
+    // Primary accent is citrus amber — distinctive, signals "gold standard
+    // of yield". Taste Skill: inner highlight + tinted shadow, no outer
+    // neon glow. Emil's rule: scale(0.97) on :active handled globally.
     const base = `inline-flex items-center justify-center gap-2 rounded-xl font-medium
-        bg-gradient-to-b from-emerald-400 to-emerald-500 text-black
-        ring-1 ring-inset ring-emerald-300/40
-        shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_1px_2px_rgba(0,0,0,0.5)]
-        hover:from-emerald-300 hover:to-emerald-400
+        bg-gradient-to-b from-amber-300 to-amber-500 text-zinc-950
+        ring-1 ring-inset ring-amber-200/55
+        shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_1px_2px_rgba(0,0,0,0.55)]
+        hover:from-amber-200 hover:to-amber-400
         disabled:from-zinc-700 disabled:to-zinc-800 disabled:text-zinc-500 disabled:ring-zinc-700 disabled:shadow-none disabled:cursor-not-allowed
         transition-colors duration-150
         ${sizes[size]}`;
