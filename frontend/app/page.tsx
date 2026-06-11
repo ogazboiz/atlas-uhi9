@@ -48,18 +48,18 @@ function Hero() {
     return (
         <section className="relative overflow-hidden">
             <div className="absolute inset-x-0 top-0 -z-10 h-[680px] atlas-grid-bg opacity-30" />
-            <div className="absolute left-[-10%] top-[10%] -z-10 h-[420px] w-[600px] rounded-full bg-amber-500/[0.06] blur-[120px]" />
-            <div className="absolute right-[-5%] top-[40%] -z-10 h-[340px] w-[500px] rounded-full bg-sky-500/[0.05] blur-[100px]" />
+            <div className="absolute left-[-10%] top-[10%] -z-10 h-[420px] w-[600px] rounded-full bg-amber-500/[0.07] blur-[120px]" />
+            <div className="absolute right-[-5%] top-[40%] -z-10 h-[340px] w-[500px] rounded-full bg-white/[0.02] blur-[100px]" />
 
             <PageFrame>
                 <div className="grid items-center gap-10 pt-6 lg:grid-cols-[1.05fr_1fr] lg:gap-12 lg:pt-12">
                     {/* Left column — content */}
                     <Stagger className="max-w-2xl" staggerChildren={0.06}>
                         <StaggerItem>
-                            <Chip tone="emerald">
+                            <Chip tone="primary">
                                 <span className="relative flex h-1.5 w-1.5">
-                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-                                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-300 opacity-70" />
+                                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-300" />
                                 </span>
                                 UHI9 Hookathon · Reactive Network · Live testnet
                             </Chip>
@@ -96,13 +96,13 @@ function Hero() {
                         <StaggerItem>
                             <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-[0.14em] text-zinc-500">
                                 <span className="flex items-center gap-1.5">
-                                    <Dot color="#38bdf8" /> 6 verified contracts
+                                    <Dot color="#fbbf24" /> 6 verified contracts
                                 </span>
                                 <span className="flex items-center gap-1.5">
-                                    <Dot color="#38bdf8" /> 15-20s loop
+                                    <Dot color="#fbbf24" /> 15-20s loop
                                 </span>
                                 <span className="flex items-center gap-1.5">
-                                    <Dot color="#10b981" /> 61/61 tests
+                                    <Dot color="#fbbf24" /> 61/61 tests
                                 </span>
                             </div>
                         </StaggerItem>
@@ -128,13 +128,13 @@ function Hero() {
                             {/* Impact controls — no wallet required, simulates the demo */}
                             <div className="border-t border-white/[0.06] bg-black/30 p-3 backdrop-blur-md">
                                 <div className="grid grid-cols-3 gap-2">
-                                    <HeroChip onClick={() => pulseImpact(1, 15)} tone="rose">
+                                    <HeroChip onClick={() => pulseImpact(1, 15)} variant="neutral">
                                         Dump 15%
                                     </HeroChip>
-                                    <HeroChip onClick={() => pulseImpact(-1, 15)} tone="emerald">
+                                    <HeroChip onClick={() => pulseImpact(-1, 15)} variant="neutral">
                                         Pump 15%
                                     </HeroChip>
-                                    <HeroChip onClick={pulseHeal} tone="sky">
+                                    <HeroChip onClick={pulseHeal} variant="primary">
                                         Reactive heal
                                     </HeroChip>
                                 </div>
@@ -153,22 +153,20 @@ function Hero() {
 function HeroChip({
     children,
     onClick,
-    tone,
+    variant,
 }: {
     children: React.ReactNode;
     onClick: () => void;
-    tone: "rose" | "emerald" | "sky";
+    variant: "primary" | "neutral";
 }) {
-    const toneClass =
-        tone === "rose"
-            ? "border-rose-500/30 text-rose-200 hover:bg-rose-500/10"
-            : tone === "emerald"
-              ? "border-emerald-500/30 text-emerald-200 hover:bg-emerald-500/10"
-              : "border-sky-500/30 text-sky-200 hover:bg-sky-500/10";
+    const cls =
+        variant === "primary"
+            ? "border-amber-400/40 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20"
+            : "border-white/10 bg-white/[0.03] text-zinc-200 hover:bg-white/[0.06] hover:border-white/20";
     return (
         <button
             onClick={onClick}
-            className={`rounded-lg border ${toneClass} px-3 py-2 text-xs font-medium transition-colors`}
+            className={`rounded-lg border ${cls} px-3 py-2 text-xs font-medium transition-colors`}
         >
             {children}
         </button>
@@ -322,31 +320,21 @@ function FeatureHighlights() {
     return (
         <PageFrame>
             <Stagger className="grid gap-3 sm:grid-cols-3 sm:gap-4" whenInView staggerChildren={0.1}>
-                {FEATURES.map((f) => {
-                    const ring =
-                        f.accent === "emerald"
-                            ? "bg-emerald-500/10 text-emerald-300 ring-emerald-500/20"
-                            : f.accent === "violet"
-                              ? "bg-violet-500/10 text-violet-300 ring-violet-500/20"
-                              : "bg-sky-500/10 text-sky-300 ring-sky-500/20";
-                    return (
-                        <StaggerItem key={f.title}>
-                            <HoverLift>
-                                <div className="atlas-card group h-full p-6 transition-colors hover:bg-white/[0.03]">
-                                    <div
-                                        className={`mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg ring-1 ${ring}`}
-                                    >
-                                        {f.icon}
-                                    </div>
-                                    <h3 className="mb-1.5 text-base font-semibold tracking-tight text-white">
-                                        {f.title}
-                                    </h3>
-                                    <p className="text-sm leading-relaxed text-zinc-400">{f.body}</p>
+                {FEATURES.map((f) => (
+                    <StaggerItem key={f.title}>
+                        <HoverLift>
+                            <div className="atlas-card group h-full p-6 transition-colors hover:bg-white/[0.03]">
+                                <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10 text-amber-200 ring-1 ring-amber-400/25">
+                                    {f.icon}
                                 </div>
-                            </HoverLift>
-                        </StaggerItem>
-                    );
-                })}
+                                <h3 className="mb-1.5 text-base font-semibold tracking-tight text-white">
+                                    {f.title}
+                                </h3>
+                                <p className="text-sm leading-relaxed text-zinc-400">{f.body}</p>
+                            </div>
+                        </HoverLift>
+                    </StaggerItem>
+                ))}
             </Stagger>
         </PageFrame>
     );
@@ -393,7 +381,7 @@ function HowItWorks() {
                     <StaggerItem key={s.n}>
                         <HoverLift>
                             <div className="atlas-card h-full p-6">
-                                <div className="text-xs font-mono text-emerald-400">{s.n}</div>
+                                <div className="text-xs font-mono text-amber-300">{s.n}</div>
                                 <h3 className="mt-4 text-base font-semibold tracking-tight text-white">{s.title}</h3>
                                 <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">{s.body}</p>
                             </div>
@@ -413,11 +401,11 @@ function DemoCallout() {
     return (
         <PageFrame>
             <FadeIn whenInView y={20} className="atlas-card-strong relative overflow-hidden p-8 sm:p-10">
-                <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
-                <div className="absolute -bottom-24 -left-12 h-72 w-72 rounded-full bg-violet-500/10 blur-3xl" />
+                <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-amber-500/8 blur-3xl" />
+                <div className="absolute -bottom-24 -left-12 h-72 w-72 rounded-full bg-white/[0.02] blur-3xl" />
                 <div className="relative grid items-center gap-6 lg:grid-cols-[1.4fr_1fr]">
                     <div>
-                        <Chip tone="emerald">Live on testnet right now</Chip>
+                        <Chip tone="primary">Live on testnet right now</Chip>
                         <h3 className="mt-4 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
                             See an Atlas LP stay flat while a vanilla LP bleeds.
                         </h3>
@@ -442,10 +430,10 @@ function DemoCallout() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
-                        <DemoMiniStat label="Atlas LP" value="$7,000" tone="emerald" sub="flat" />
-                        <DemoMiniStat label="Vanilla LP" value="$5,950" tone="rose" sub="-15%" />
-                        <DemoMiniStat label="Cross-chain latency" value="~18s" tone="violet" sub="observed" />
-                        <DemoMiniStat label="Atlas advantage" value="+17.6%" tone="emerald" sub="after dump" />
+                        <DemoMiniStat label="Atlas LP" value="$7,000" variant="primary" sub="flat" />
+                        <DemoMiniStat label="Vanilla LP" value="$5,950" variant="neutral" sub="-15%" />
+                        <DemoMiniStat label="Cross-chain latency" value="~18s" variant="neutral" sub="observed" />
+                        <DemoMiniStat label="Atlas advantage" value="+17.6%" variant="primary" sub="after dump" />
                     </div>
                 </div>
             </FadeIn>
@@ -457,14 +445,14 @@ function DemoMiniStat({
     label,
     value,
     sub,
-    tone,
+    variant,
 }: {
     label: string;
     value: string;
     sub: string;
-    tone: "emerald" | "rose" | "violet";
+    variant: "primary" | "neutral";
 }) {
-    const text = {emerald: "text-emerald-300", rose: "text-rose-300", violet: "text-violet-300"}[tone];
+    const text = variant === "primary" ? "text-amber-200" : "text-white";
     return (
         <div className="atlas-card p-4">
             <div className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">{label}</div>
@@ -517,7 +505,7 @@ function ContractAttestations() {
                                         {c.address.slice(0, 6)}…{c.address.slice(-4)}
                                     </div>
                                 </div>
-                                <span className="text-xs text-zinc-500 transition-colors group-hover:text-emerald-400">
+                                <span className="text-xs text-zinc-500 transition-colors group-hover:text-amber-300">
                                     →
                                 </span>
                             </a>
@@ -538,7 +526,7 @@ function ContractAttestations() {
                                     {REACTIVE.reactive.slice(0, 6)}…{REACTIVE.reactive.slice(-4)}
                                 </div>
                             </div>
-                            <span className="text-xs text-zinc-500 transition-colors group-hover:text-violet-400">
+                            <span className="text-xs text-zinc-500 transition-colors group-hover:text-amber-300">
                                 →
                             </span>
                         </a>
@@ -557,7 +545,7 @@ function FinalCTA() {
     return (
         <PageFrame>
             <FadeIn whenInView y={20} className="atlas-card-strong relative overflow-hidden p-10 text-center sm:p-14">
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
                 <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
                     Ready to see it run?
                 </h2>

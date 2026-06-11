@@ -101,7 +101,7 @@ export function HedgeConfidenceGauge() {
 
     return (
         <section className="atlas-card-strong relative overflow-hidden p-6">
-            <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-violet-500/10 blur-3xl" />
+            <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-amber-500/8 blur-3xl" />
             <div className="relative">
                 <div className="mb-4 flex items-center justify-between">
                     <div>
@@ -112,7 +112,7 @@ export function HedgeConfidenceGauge() {
                             Hedge Confidence
                         </h2>
                     </div>
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-500/25 bg-violet-500/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-violet-300">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-500/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-amber-200">
                         Ensemble · 4 signals
                     </span>
                 </div>

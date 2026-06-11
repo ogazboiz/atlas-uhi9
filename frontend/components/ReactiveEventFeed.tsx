@@ -124,7 +124,7 @@ export function ReactiveEventFeed() {
 
             {events.length === 0 ? (
                 <div className="atlas-card flex flex-col items-center justify-center gap-2 border-dashed p-10 text-center">
-                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-violet-500/10 text-violet-300">
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10 text-amber-200">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                             <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
@@ -151,8 +151,8 @@ function EventRow({ev, now}: {ev: FeedEvent; now: number}) {
         <li className="atlas-fade-in flex items-center justify-between gap-4 px-4 py-3.5 text-sm transition-colors hover:bg-white/[0.02]">
             <div className="flex min-w-0 items-center gap-3">
                 <span className="relative flex h-2 w-2 shrink-0">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-300 opacity-40" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-300" />
                 </span>
                 <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -160,8 +160,8 @@ function EventRow({ev, now}: {ev: FeedEvent; now: number}) {
                         <span
                             className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
                                 deltaPositive
-                                    ? "border-rose-500/25 bg-rose-500/10 text-rose-300"
-                                    : "border-emerald-500/25 bg-emerald-500/10 text-emerald-300"
+                                    ? "border-white/15 bg-white/[0.04] text-zinc-300"
+                                    : "border-amber-400/30 bg-amber-500/10 text-amber-200"
                             }`}
                         >
                             {deltaPositive ? "+" : "−"}
@@ -185,7 +185,7 @@ function EventRow({ev, now}: {ev: FeedEvent; now: number}) {
                 href={`${REACTIVE.reactiveExplorer}/address/${REACTIVE.reactive}`}
                 target="_blank"
                 rel="noreferrer"
-                className="shrink-0 text-[11px] text-zinc-500 transition-colors hover:text-violet-300"
+                className="shrink-0 text-[11px] text-zinc-500 transition-colors hover:text-amber-200"
             >
                 Lasna ↗
             </a>

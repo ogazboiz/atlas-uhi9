@@ -369,18 +369,15 @@ function FeedPanel({
 }
 
 function KindBadge({kind}: {kind: ActivityKind}) {
-    const styles: Record<ActivityKind, string> = {
-        Deposit: "bg-emerald-500/10 text-emerald-300 border-emerald-500/25",
-        Withdraw: "bg-amber-500/10 text-amber-300 border-amber-500/25",
-        FeesDeposited: "bg-sky-500/10 text-sky-300 border-sky-500/25",
-        HedgeOpened: "bg-emerald-500/10 text-emerald-300 border-emerald-500/25",
-        HedgeResized: "bg-white/[0.05] text-zinc-300 border-white/10",
-        HedgeClosed: "bg-rose-500/10 text-rose-300 border-rose-500/25",
-        RebalanceCallback: "bg-violet-500/10 text-violet-300 border-violet-500/25",
-    };
+    // Strict single-accent palette. RebalanceCallback (the cross-chain hero
+    // event) gets the amber primary. Everything else is neutral white/zinc.
+    // Differentiation comes from the kind label itself, not hue.
+    const primary = "bg-amber-500/10 text-amber-200 border-amber-400/30";
+    const neutral = "bg-white/[0.04] text-zinc-300 border-white/10";
+    const cls = kind === "RebalanceCallback" ? primary : neutral;
     return (
         <span
-            className={`shrink-0 rounded-full border px-2.5 py-1 font-mono text-[9px] uppercase tracking-wider ${styles[kind]}`}
+            className={`shrink-0 rounded-full border px-2.5 py-1 font-mono text-[9px] uppercase tracking-wider ${cls}`}
         >
             {kind}
         </span>

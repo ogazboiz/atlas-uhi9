@@ -118,7 +118,7 @@ export function AtlasMark({size = 18}: {size?: number}) {
             style={{
                 width: size + 6,
                 height: size + 6,
-                background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 55%, #38bdf8 100%)",
+                background: "linear-gradient(135deg, #fde68a 0%, #fbbf24 45%, #d97706 100%)",
                 boxShadow:
                     "inset 0 1px 0 rgba(255,255,255,0.30), 0 1px 2px rgba(0,0,0,0.45)",
             }}
@@ -172,7 +172,10 @@ export function SectionHeader({
     );
 }
 
-/// Stat card pattern used throughout.
+/// Stat card pattern. Single accent palette: tone is either default
+/// (zinc, neutral) or primary (amber). All previous semantic tones
+/// (emerald/violet/sky/rose/amber) map onto these two — semantic state
+/// comes from copy + intensity, not new hue accents.
 export function StatCard({
     label,
     value,
@@ -183,36 +186,23 @@ export function StatCard({
     label: string;
     value: ReactNode;
     hint?: ReactNode;
-    tone?: "default" | "emerald" | "violet" | "sky" | "rose" | "amber";
+    /// Legacy tone names are accepted and folded into the two real tones
+    /// so existing callsites don't have to change at once.
+    tone?: "default" | "primary" | "emerald" | "violet" | "sky" | "rose" | "amber";
     icon?: ReactNode;
 }) {
-    const toneRing: Record<string, string> = {
-        default: "",
-        emerald: "ring-1 ring-emerald-500/20",
-        violet: "ring-1 ring-violet-400/20",
-        sky: "ring-1 ring-sky-400/20",
-        rose: "ring-1 ring-rose-400/20",
-        amber: "ring-1 ring-amber-400/20",
-    };
-    const toneText: Record<string, string> = {
-        default: "text-white",
-        emerald: "text-emerald-300",
-        violet: "text-violet-300",
-        sky: "text-sky-300",
-        rose: "text-rose-300",
-        amber: "text-amber-300",
-    };
+    const isPrimary = tone === "primary" || tone === "amber" || tone === "emerald";
+    const ring = isPrimary ? "ring-1 ring-amber-400/25" : "";
+    const text = isPrimary ? "text-amber-200" : "text-white";
     return (
-        <div
-            className={`atlas-card relative overflow-hidden p-5 ${toneRing[tone]}`}
-        >
+        <div className={`atlas-card relative overflow-hidden p-5 ${ring}`}>
             <div className="flex items-start justify-between gap-3">
                 <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-zinc-500">
                     {label}
                 </span>
                 {icon && <span className="text-zinc-500">{icon}</span>}
             </div>
-            <div className={`mt-3 font-semibold tracking-tight ${toneText[tone]} text-2xl sm:text-3xl`}>
+            <div className={`mt-3 font-semibold tracking-tight ${text} text-2xl sm:text-3xl`}>
                 {value}
             </div>
             {hint && <div className="mt-1.5 text-xs text-zinc-500">{hint}</div>}
@@ -306,25 +296,23 @@ export function SecondaryButton({
     );
 }
 
-/// Tone chip for status / category tags.
+/// Tone chip for status / category tags. Strict single-accent palette:
+/// either neutral (default) or primary amber. Legacy tone names are
+/// accepted but fold to one of those two — no rainbow chrome.
 export function Chip({
     children,
     tone = "default",
 }: {
     children: ReactNode;
-    tone?: "default" | "emerald" | "violet" | "sky" | "rose" | "amber";
+    tone?: "default" | "primary" | "emerald" | "violet" | "sky" | "rose" | "amber";
 }) {
-    const toneMap = {
-        default: "bg-white/[0.04] text-zinc-300 border-white/10",
-        emerald: "bg-emerald-500/10 text-emerald-300 border-emerald-500/25",
-        violet: "bg-violet-500/10 text-violet-300 border-violet-500/25",
-        sky: "bg-sky-500/10 text-sky-300 border-sky-500/25",
-        rose: "bg-rose-500/10 text-rose-300 border-rose-500/25",
-        amber: "bg-amber-500/10 text-amber-300 border-amber-500/25",
-    };
+    const isPrimary = tone === "primary" || tone === "amber" || tone === "emerald";
+    const cls = isPrimary
+        ? "bg-amber-500/10 text-amber-200 border-amber-400/30"
+        : "bg-white/[0.04] text-zinc-300 border-white/10";
     return (
         <span
-            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${toneMap[tone]}`}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${cls}`}
         >
             {children}
         </span>

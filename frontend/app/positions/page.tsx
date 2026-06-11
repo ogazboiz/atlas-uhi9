@@ -108,7 +108,7 @@ export default function PositionsPage() {
                 <div className="mb-8">
                     <Chip tone="emerald">Your stake on Atlas</Chip>
                     <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-                        Your <span className="atlas-text-emerald-gradient">positions</span>
+                        Your <span className="atlas-text-primary-gradient">positions</span>
                     </h1>
                     <p className="mt-3 max-w-2xl text-sm text-zinc-400 sm:text-base">
                         aLP shares accrue value at the live coupon rate. Each row below is a deposit you made into
@@ -160,7 +160,7 @@ export default function PositionsPage() {
 function ConnectCallout() {
     return (
         <div className="atlas-card-strong flex flex-col items-center justify-center gap-3 p-12 text-center">
-            <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-300">
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 text-amber-200">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="11" width="18" height="11" rx="2" />
                     <path d="M7 11V7a5 5 0 0110 0v4" />
@@ -269,7 +269,7 @@ function DepositHistory({deposits}: {deposits: DepositRecord[]}) {
                             className="atlas-fade-in flex items-center justify-between gap-4 px-4 py-3.5 transition-colors hover:bg-white/[0.02]"
                         >
                             <div>
-                                <div className="font-semibold tabular-nums text-emerald-300">+{fmt(d.assets, 2)} USDC</div>
+                                <div className="font-semibold tabular-nums text-amber-200">+{fmt(d.assets, 2)} USDC</div>
                                 <div className="mt-0.5 text-[11px] text-zinc-500">
                                     {relativeTime(Math.floor(Date.now() / 1000) - d.timestamp)} ·{" "}
                                     <a

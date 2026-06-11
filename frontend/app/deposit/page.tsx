@@ -200,13 +200,13 @@ function Header() {
         <div className="mb-8">
             <Chip tone="emerald">
                 <span className="relative flex h-1.5 w-1.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-300 opacity-70" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-300" />
                 </span>
                 ERC-4626 vault · Unichain Sepolia
             </Chip>
             <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-                Deposit into <span className="atlas-text-emerald-gradient">Atlas</span>
+                Deposit into <span className="atlas-text-primary-gradient">Atlas</span>
             </h1>
             <p className="mt-3 max-w-2xl text-sm text-zinc-400 sm:text-base">
                 Mint test USDC, deposit it into the vault, receive aLP shares. Shares appreciate at the flat
@@ -359,7 +359,7 @@ function DepositCard({
                     {usdcBalance !== undefined && (
                         <button
                             onClick={() => setAmount(formatUnits(usdcBalance, 18))}
-                            className="rounded-md border border-emerald-500/20 bg-emerald-500/5 px-2.5 py-1 text-[11px] text-emerald-300 transition-colors hover:border-emerald-500/40"
+                            className="rounded-md border border-amber-400/30 bg-amber-500/10 px-2.5 py-1 text-[11px] text-amber-200 transition-colors hover:border-amber-400/60"
                         >
                             MAX
                         </button>
@@ -439,8 +439,8 @@ function PositionCard({
                 {hasPosition && (
                     <Chip tone="emerald">
                         <span className="relative flex h-1.5 w-1.5">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-300 opacity-70" />
+                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-300" />
                         </span>
                         Earning
                     </Chip>
@@ -449,7 +449,7 @@ function PositionCard({
 
             {!hasPosition ? (
                 <div className="atlas-card flex flex-col items-center justify-center gap-2 border-dashed p-10 text-center">
-                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-300">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/10 text-amber-200">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                             <rect x="3" y="5" width="18" height="14" rx="2" />
                             <path d="M12 9v6M9 12h6" />
@@ -534,7 +534,7 @@ function Explainer() {
 function ExplainItem({n, title, body}: {n: string; title: string; body: string}) {
     return (
         <div className="atlas-card p-5">
-            <div className="font-mono text-xs text-emerald-400">{n}</div>
+            <div className="font-mono text-xs text-amber-300">{n}</div>
             <div className="mt-3 text-sm font-semibold text-white">{title}</div>
             <div className="mt-1 text-xs leading-relaxed text-zinc-400">{body}</div>
         </div>

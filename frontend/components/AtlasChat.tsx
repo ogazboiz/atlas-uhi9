@@ -49,8 +49,8 @@ export function AtlasChat({context, title = "Ask Atlas", opener}: AtlasChatProps
                 <h2 className="text-base font-semibold">{title}</h2>
                 <span className="text-xs text-zinc-500 inline-flex items-center gap-2">
                     <span className="relative flex h-2 w-2">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-50" />
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-violet-400" />
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-300 opacity-50" />
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-300" />
                     </span>
                     Gemini 2.5 · 4 on-chain tools
                 </span>
@@ -79,7 +79,7 @@ export function AtlasChat({context, title = "Ask Atlas", opener}: AtlasChatProps
                 <button
                     type="submit"
                     disabled={busy || !input.trim()}
-                    className="rounded-lg px-4 py-2 text-sm font-medium bg-violet-500 hover:bg-violet-400 text-black disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="rounded-lg px-4 py-2 text-sm font-medium bg-gradient-to-b from-amber-300 to-amber-500 ring-1 ring-inset ring-amber-200/50 text-zinc-950 hover:from-amber-200 hover:to-amber-400 disabled:from-zinc-700 disabled:to-zinc-800 disabled:text-zinc-500 disabled:ring-zinc-700 disabled:cursor-not-allowed transition-colors"
                 >
                     {busy ? "..." : "Ask"}
                 </button>
@@ -103,7 +103,7 @@ function Bubble({role, text}: {role: "user" | "assistant"; text: string}) {
     }
     return (
         <div className="flex justify-start">
-            <div className="max-w-[85%] px-3 py-2 rounded-lg bg-violet-950/40 border border-violet-900 text-sm text-zinc-200 whitespace-pre-wrap">
+            <div className="max-w-[85%] px-3 py-2 rounded-lg bg-amber-500/5 border border-amber-500/15 text-sm text-zinc-200 whitespace-pre-wrap">
                 {text}
             </div>
         </div>

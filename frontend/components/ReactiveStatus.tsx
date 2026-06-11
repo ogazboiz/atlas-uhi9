@@ -21,7 +21,7 @@ export function ReactiveStatus() {
 
     return (
         <section className="atlas-card-strong relative overflow-hidden p-6">
-            <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-violet-500/10 blur-3xl" />
+            <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-amber-500/8 blur-3xl" />
             <div className="relative">
                 <div className="mb-4 flex items-center justify-between">
                     <div>
@@ -32,10 +32,10 @@ export function ReactiveStatus() {
                             Reactive Network status
                         </h2>
                     </div>
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-emerald-300">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-500/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-amber-200">
                         <span className="relative flex h-1.5 w-1.5">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-300 opacity-70" />
+                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-300" />
                         </span>
                         Subscribed
                     </span>
@@ -86,7 +86,7 @@ function NonceCard({nonce}: {nonce: string}) {
     return (
         <div className="atlas-card p-4">
             <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">Hook lastNonce</div>
-            <div className="mt-1 text-3xl font-semibold tabular-nums text-emerald-300">{nonce}</div>
+            <div className="mt-1 text-3xl font-semibold tabular-nums text-amber-200">{nonce}</div>
             <div className="mt-0.5 text-[10px] text-zinc-500">Each landed callback +1</div>
         </div>
     );
@@ -102,7 +102,7 @@ function AddressCard({label, address, href}: {label: string; address: string; hr
                 rel="noreferrer"
                 className="mt-1.5 inline-flex items-center gap-1.5 font-mono text-sm text-zinc-200 transition-colors hover:text-white"
             >
-                {short(address)} <span className="text-zinc-500 group-hover:text-violet-400">→</span>
+                {short(address)} <span className="text-zinc-500 group-hover:text-amber-300">→</span>
             </a>
             <div className="mt-0.5 text-[10px] text-zinc-500">Open in explorer</div>
         </div>

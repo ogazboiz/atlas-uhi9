@@ -130,8 +130,8 @@ export default function ComparePage() {
                 <div className="mb-8">
                     <Chip tone="emerald">
                         <span className="relative flex h-1.5 w-1.5">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-300 opacity-70" />
+                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-300" />
                         </span>
                         Live on Unichain Sepolia
                     </Chip>
@@ -147,8 +147,8 @@ export default function ComparePage() {
 
                 {/* Signature interactive hero: hedged mercury blobs */}
                 <div className="atlas-card-strong relative mb-6 overflow-hidden p-4 sm:p-6">
-                    <div className="absolute left-1/2 top-0 -z-10 h-72 w-72 -translate-x-1/2 rounded-full bg-emerald-500/[0.08] blur-[100px]" />
-                    <div className="absolute right-1/4 bottom-0 -z-10 h-48 w-48 rounded-full bg-violet-500/[0.08] blur-[80px]" />
+                    <div className="absolute left-1/2 top-0 -z-10 h-72 w-72 -translate-x-1/2 rounded-full bg-amber-500/[0.07] blur-[100px]" />
+                    <div className="absolute right-1/4 bottom-0 -z-10 h-48 w-48 rounded-full bg-white/[0.02] blur-[80px]" />
                     <div className="mb-3 flex items-center justify-between">
                         <div>
                             <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
@@ -158,10 +158,10 @@ export default function ComparePage() {
                                 Drag the blobs. Press 1-4 below. Watch the difference.
                             </h2>
                         </div>
-                        <span className="hidden items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-emerald-300 sm:inline-flex">
+                        <span className="hidden items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-500/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-amber-200 sm:inline-flex">
                             <span className="relative flex h-1.5 w-1.5">
-                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-                                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-300 opacity-70" />
+                                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-300" />
                             </span>
                             Liquid simulation
                         </span>
@@ -346,9 +346,9 @@ function TriggerButton({
     const reduced = useReducedMotion();
     const toneClass =
         button.tone === "rose"
-            ? "border-rose-500/30 text-rose-200 hover:border-rose-500/60 hover:bg-rose-500/10"
+            ? "border-white/10 text-zinc-200 hover:border-white/25 hover:bg-white/[0.04]"
             : button.tone === "emerald"
-              ? "border-emerald-500/30 text-emerald-200 hover:border-emerald-500/60 hover:bg-emerald-500/10"
+              ? "border-white/10 text-zinc-200 hover:border-white/25 hover:bg-white/[0.04]"
               : "border-white/10 text-zinc-200 hover:border-white/25 hover:bg-white/[0.04]";
 
     const interaction = reduced
@@ -363,7 +363,7 @@ function TriggerButton({
         <motion.button
             disabled={disabled}
             onClick={() => onTrigger(button.pct)}
-            className={`group relative flex flex-col items-center justify-center gap-1.5 rounded-xl border px-4 py-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${toneClass} ${active ? "ring-2 ring-emerald-400/60" : ""}`}
+            className={`group relative flex flex-col items-center justify-center gap-1.5 rounded-xl border px-4 py-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${toneClass} ${active ? "ring-2 ring-amber-400/60" : ""}`}
             {...interaction}
         >
             <span className="text-base font-semibold">{button.label}</span>
@@ -372,7 +372,7 @@ function TriggerButton({
                 <kbd className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-zinc-300">{button.hint}</kbd>
             </span>
             {active && (
-                <span className="absolute right-2 top-2 inline-flex h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                <span className="absolute right-2 top-2 inline-flex h-2 w-2 animate-pulse rounded-full bg-amber-300" />
             )}
         </motion.button>
     );
@@ -437,8 +437,8 @@ function TriggerPanel({
 
             <p className="mt-4 text-xs text-zinc-500">
                 {busy ? (
-                    <span className="inline-flex items-center gap-2 text-emerald-400">
-                        <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+                    <span className="inline-flex items-center gap-2 text-amber-300">
+                        <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-300" />
                         Transaction pending. Chart will update once the new price is on-chain.
                     </span>
                 ) : (
