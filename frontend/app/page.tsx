@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import {useState} from "react";
 import {useReadContract} from "wagmi";
 import {formatUnits} from "viem";
 import {ATLAS, REACTIVE} from "@/lib/contracts";
 import {ATLAS_HOOK_ABI, ATLAS_VAULT_ABI, MOCK_ORACLE_ABI} from "@/lib/abis";
 import {Chip, PageFrame, PrimaryButton, SecondaryButton, Shell, StatCard} from "@/components/Shell";
-import {FadeIn, HoverLift, NumberTicker, SectionReveal, Stagger, StaggerItem} from "@/components/motion/Motion";
+import {FadeIn, HoverLift, NumberTicker, Stagger, StaggerItem} from "@/components/motion/Motion";
+import {HedgedMercury} from "@/components/HedgedMercury";
 
 const EXPLORER = "https://sepolia.uniscan.xyz/address";
 
@@ -28,68 +30,148 @@ export default function HomePage() {
 // Hero
 // ---------------------------------------------------------------------------
 
+/// Hero — asymmetric split per Taste Skill anti-slop:
+/// left = content + CTAs (60% on lg+), right = live HedgedMercury blob
+/// (40% on lg+) with inline impact controls. Visitors interact with the
+/// product on the landing without clicking anywhere.
 function Hero() {
+    const [heroImpact, setHeroImpact] = useState(0);
+    const [heroHeal, setHeroHeal] = useState(0);
+
+    function pulseImpact(sign: 1 | -1, magnitude: number) {
+        setHeroImpact((k) => k + sign * magnitude || sign);
+    }
+    function pulseHeal() {
+        setHeroHeal((k) => k + 1);
+    }
+
     return (
         <section className="relative overflow-hidden">
-            <div className="absolute inset-x-0 top-0 -z-10 h-[600px] atlas-grid-bg opacity-40" />
-            <div className="absolute left-1/2 top-0 -z-10 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-emerald-500/[0.08] blur-[120px]" />
+            <div className="absolute inset-x-0 top-0 -z-10 h-[680px] atlas-grid-bg opacity-30" />
+            <div className="absolute left-[-10%] top-[10%] -z-10 h-[420px] w-[600px] rounded-full bg-emerald-500/[0.07] blur-[120px]" />
+            <div className="absolute right-[-5%] top-[40%] -z-10 h-[340px] w-[500px] rounded-full bg-sky-500/[0.05] blur-[100px]" />
 
             <PageFrame>
-                <Stagger className="mx-auto max-w-4xl pt-8 text-center sm:pt-16" staggerChildren={0.08}>
-                    <StaggerItem>
-                        <Chip tone="emerald">
-                            <span className="relative flex h-1.5 w-1.5">
-                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-                                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                            </span>
-                            UHI9 Hookathon · Reactive Network Sponsor Track · Live testnet
-                        </Chip>
-                    </StaggerItem>
+                <div className="grid items-center gap-10 pt-6 lg:grid-cols-[1.05fr_1fr] lg:gap-12 lg:pt-12">
+                    {/* Left column — content */}
+                    <Stagger className="max-w-2xl" staggerChildren={0.06}>
+                        <StaggerItem>
+                            <Chip tone="emerald">
+                                <span className="relative flex h-1.5 w-1.5">
+                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
+                                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                </span>
+                                UHI9 Hookathon · Reactive Network · Live testnet
+                            </Chip>
+                        </StaggerItem>
 
-                    <StaggerItem>
-                        <h1 className="mt-7 text-5xl font-semibold tracking-tight sm:text-6xl md:text-7xl">
-                            <span className="atlas-text-gradient">Hedged LP yield.</span>
-                            <br />
-                            <span className="atlas-text-emerald-gradient">Autonomous. Fixed APR.</span>
-                        </h1>
-                    </StaggerItem>
+                        <StaggerItem>
+                            <h1 className="mt-6 text-[44px] font-semibold leading-[1.02] tracking-[-0.025em] sm:text-[56px] md:text-[68px]">
+                                <span className="atlas-text-gradient">Hedged LP yield.</span>
+                                <br />
+                                <span className="atlas-text-emerald-gradient">Autonomous. Fixed APR.</span>
+                            </h1>
+                        </StaggerItem>
 
-                    <StaggerItem>
-                        <p className="mx-auto mt-7 max-w-2xl text-base text-zinc-400 sm:text-lg">
-                            Atlas is a Uniswap v4 hook that pairs every LP deposit with a delta-matched perpetual
-                            short. A Reactive Smart Contract handles rebalancing across chains. You earn a flat
-                            8% APR while the system stays delta-neutral.
-                        </p>
-                    </StaggerItem>
+                        <StaggerItem>
+                            <p className="mt-6 max-w-xl text-[15px] leading-relaxed text-zinc-400 sm:text-base">
+                                A Uniswap v4 hook that pairs every LP deposit with a delta-matched perpetual
+                                short. A Reactive Smart Contract rebalances the hedge cross-chain in 15 to 20
+                                seconds. You earn a flat 8% APR while the system stays delta-neutral.
+                            </p>
+                        </StaggerItem>
 
-                    <StaggerItem>
-                        <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                            <PrimaryButton href="/compare" size="lg">
-                                Open the live demo
-                                <Arrow />
-                            </PrimaryButton>
-                            <SecondaryButton href="/deposit" size="lg">
-                                Try a deposit
-                            </SecondaryButton>
+                        <StaggerItem>
+                            <div className="mt-7 flex flex-wrap gap-3">
+                                <PrimaryButton href="/compare" size="lg">
+                                    Open the live demo
+                                    <Arrow />
+                                </PrimaryButton>
+                                <SecondaryButton href="/deposit" size="lg">
+                                    Try a deposit
+                                </SecondaryButton>
+                            </div>
+                        </StaggerItem>
+
+                        <StaggerItem>
+                            <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-[0.14em] text-zinc-500">
+                                <span className="flex items-center gap-1.5">
+                                    <Dot color="#10b981" /> 6 verified contracts
+                                </span>
+                                <span className="flex items-center gap-1.5">
+                                    <Dot color="#38bdf8" /> 15-20s loop
+                                </span>
+                                <span className="flex items-center gap-1.5">
+                                    <Dot color="#10b981" /> 61/61 tests
+                                </span>
+                            </div>
+                        </StaggerItem>
+                    </Stagger>
+
+                    {/* Right column — interactive blob + impact controls */}
+                    <FadeIn delay={0.15} y={6} className="relative">
+                        <div className="atlas-card-strong relative overflow-hidden">
+                            <div className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-emerald-300">
+                                <span className="relative flex h-1.5 w-1.5">
+                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
+                                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                </span>
+                                Drag me
+                            </div>
+                            <HedgedMercury
+                                impactKey={heroImpact}
+                                healPulse={heroHeal}
+                                vanillaValue={5950}
+                                atlasValue={7000}
+                                className="!h-[380px] sm:!h-[420px]"
+                            />
+                            {/* Impact controls — no wallet required, simulates the demo */}
+                            <div className="border-t border-white/[0.06] bg-black/30 p-3 backdrop-blur-md">
+                                <div className="grid grid-cols-3 gap-2">
+                                    <HeroChip onClick={() => pulseImpact(1, 15)} tone="rose">
+                                        Dump 15%
+                                    </HeroChip>
+                                    <HeroChip onClick={() => pulseImpact(-1, 15)} tone="emerald">
+                                        Pump 15%
+                                    </HeroChip>
+                                    <HeroChip onClick={pulseHeal} tone="sky">
+                                        Reactive heal
+                                    </HeroChip>
+                                </div>
+                                <p className="mt-2 text-center text-[10px] text-zinc-500">
+                                    Try the buttons. The blob is the hedge made visible.
+                                </p>
+                            </div>
                         </div>
-                    </StaggerItem>
-
-                    <StaggerItem>
-                        <div className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-zinc-500">
-                            <span className="flex items-center gap-1.5">
-                                <Dot color="#10b981" /> 6 verified contracts
-                            </span>
-                            <span className="flex items-center gap-1.5">
-                                <Dot color="#38bdf8" /> 15-20s cross-chain loop
-                            </span>
-                            <span className="flex items-center gap-1.5">
-                                <Dot color="#a78bfa" /> 61/61 tests passing
-                            </span>
-                        </div>
-                    </StaggerItem>
-                </Stagger>
+                    </FadeIn>
+                </div>
             </PageFrame>
         </section>
+    );
+}
+
+function HeroChip({
+    children,
+    onClick,
+    tone,
+}: {
+    children: React.ReactNode;
+    onClick: () => void;
+    tone: "rose" | "emerald" | "sky";
+}) {
+    const toneClass =
+        tone === "rose"
+            ? "border-rose-500/30 text-rose-200 hover:bg-rose-500/10"
+            : tone === "emerald"
+              ? "border-emerald-500/30 text-emerald-200 hover:bg-emerald-500/10"
+              : "border-sky-500/30 text-sky-200 hover:bg-sky-500/10";
+    return (
+        <button
+            onClick={onClick}
+            className={`rounded-lg border ${toneClass} px-3 py-2 text-xs font-medium transition-colors`}
+        >
+            {children}
+        </button>
     );
 }
 

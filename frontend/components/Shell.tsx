@@ -240,12 +240,15 @@ export function PrimaryButton({
         md: "px-5 py-2.5 text-sm",
         lg: "px-6 py-3.5 text-[15px]",
     };
-    const base = `inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-150
+    // Taste Skill anti-slop: no neon outer glows. Inner highlight + tinted
+    // tinted-to-background shadow instead. Emil's rule: scale(0.97) on :active.
+    const base = `inline-flex items-center justify-center gap-2 rounded-xl font-medium
         bg-gradient-to-b from-emerald-400 to-emerald-500 text-black
+        ring-1 ring-inset ring-emerald-300/40
+        shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_1px_2px_rgba(0,0,0,0.5)]
         hover:from-emerald-300 hover:to-emerald-400
-        active:scale-[0.98]
-        disabled:from-zinc-700 disabled:to-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed
-        shadow-[0_4px_24px_-4px_rgba(16,185,129,0.45)]
+        disabled:from-zinc-700 disabled:to-zinc-800 disabled:text-zinc-500 disabled:ring-zinc-700 disabled:shadow-none disabled:cursor-not-allowed
+        transition-colors duration-150
         ${sizes[size]}`;
     if (href) {
         return (
@@ -280,11 +283,12 @@ export function SecondaryButton({
         md: "px-5 py-2.5 text-sm",
         lg: "px-6 py-3.5 text-[15px]",
     };
-    const base = `inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-150
+    const base = `inline-flex items-center justify-center gap-2 rounded-xl font-medium
         border border-white/10 bg-white/[0.03] text-white
+        shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]
         hover:bg-white/[0.06] hover:border-white/20
-        active:scale-[0.98]
         disabled:opacity-40 disabled:cursor-not-allowed
+        transition-colors duration-150
         ${sizes[size]}`;
     if (href) {
         return (

@@ -2,18 +2,21 @@
 
 /// Atlas motion primitives.
 ///
-/// Built on Emil Kowalski's animation vocabulary:
-///   - Ease-out by default (responding to user)
-///   - Ease-in-out for A->B layout
-///   - Springs for press feedback (snappy, interruptible)
-///   - Tabular numbers everywhere a value can change
-///   - Stagger 60-80ms between siblings
-///   - Stagger entry: 18-22ms cascade across hero -> metrics -> cards
-///   - Idle float / pulse for ambient life
-///   - prefers-reduced-motion respected through the useReducedMotion hook
+/// Built strictly on Emil Kowalski's animation rules
+/// (https://emilkowal.ski/skill, animations.dev/vocabulary):
+///   - UI animations stay under 300ms. Marketing reveals up to ~400ms.
+///   - Custom strong easings, not the built-in CSS ones. Built-ins lack punch.
+///   - Never animate from scale(0). Start at scale(0.96) + opacity 0.
+///   - Buttons: scale(0.97) on :active with 160ms ease-out, in CSS.
+///   - Origin-aware popovers. Modals stay centered.
+///   - Only animate transform + opacity. No blur on entries — too expensive
+///     and masks the very content you are trying to show. Blur is reserved
+///     for crossfades that feel off (2px max).
+///   - Asymmetric enter/exit: exits 50-60% of the enter duration.
+///   - Hover effects gated behind `@media (hover: hover) and (pointer: fine)`.
+///   - prefers-reduced-motion: KEEP opacity/color transitions, drop movement.
 ///
-/// All components forward a `className` so they stay drop-in compatible
-/// with the existing Tailwind-based design system.
+/// All components forward a `className` for drop-in Tailwind compatibility.
 
 import {
     AnimatePresence,
@@ -29,50 +32,59 @@ import {
 import {useEffect, useMemo, useRef, type ReactNode} from "react";
 
 // --------------------------------------------------------------------------
-// Shared timing primitives
+// Easing curves — Emil's strong custom variants. Do NOT replace with the
+// built-in CSS keywords; those lack the punch that makes UI feel intentional.
 // --------------------------------------------------------------------------
 
-/// Standard "ease-out" curve. Reach the destination quickly, settle slow.
-/// Use for: any element responding to user input (clicks, route enters).
-export const EASE_OUT: Transition["ease"] = [0.16, 1, 0.3, 1];
+/// Strong ease-out. Use for entrances and anything responding to user input.
+/// The instant movement makes the interface feel snappy.
+export const EASE_OUT: Transition["ease"] = [0.23, 1, 0.32, 1];
 
-/// "Ease-in-out" — slow, fast, slow. Use when an element on screen
-/// travels from A to B (color changes, layout morphs).
-export const EASE_IN_OUT: Transition["ease"] = [0.65, 0, 0.35, 1];
+/// Strong ease-in-out. Use when an on-screen element moves from A to B
+/// (tone changes, layout morphs).
+export const EASE_IN_OUT: Transition["ease"] = [0.77, 0, 0.175, 1];
 
-/// Spring tuned to feel snappy but settled. Used for press feedback +
-/// micro-interactions.
-export const SPRING_SNAP: Transition = {type: "spring", stiffness: 360, damping: 26, mass: 0.6};
+/// iOS-like drawer curve (from Ionic). Use for large drawers/sheets.
+export const EASE_DRAWER: Transition["ease"] = [0.32, 0.72, 0, 1];
 
-/// Spring tuned for gentle settle. Used for hover lift, idle motion.
-export const SPRING_SOFT: Transition = {type: "spring", stiffness: 180, damping: 22, mass: 0.8};
+/// Spring tuned to feel snappy and interruptible. Press feedback.
+export const SPRING_SNAP: Transition = {type: "spring", stiffness: 380, damping: 24, mass: 0.6};
+
+/// Soft spring for hover lift and idle motion.
+export const SPRING_SOFT: Transition = {type: "spring", stiffness: 200, damping: 22, mass: 0.8};
+
+// Durations Emil's rule says UI stays under 300ms.
+const DURATION_FAST = 0.16; // 160ms — buttons, tooltips
+const DURATION_NORMAL = 0.22; // 220ms — dropdowns, selects, stat cards
+const DURATION_REVEAL = 0.32; // 320ms — section entrances (marketing latitude)
 
 // --------------------------------------------------------------------------
 // Variants — reusable enter animations
 // --------------------------------------------------------------------------
 
+/// Drop in 8px from above with a quick settle. No blur — keep transform + opacity only.
 export const fadeUpVariants: Variants = {
-    hidden: {opacity: 0, y: 12, filter: "blur(6px)"},
+    hidden: {opacity: 0, y: 8},
     visible: {
         opacity: 1,
         y: 0,
-        filter: "blur(0px)",
-        transition: {duration: 0.55, ease: EASE_OUT},
+        transition: {duration: DURATION_REVEAL, ease: EASE_OUT},
     },
 };
 
+/// Scale in from 0.96 (never from 0 — nothing in the real world appears from nothing).
 export const scaleInVariants: Variants = {
-    hidden: {opacity: 0, scale: 0.96, filter: "blur(4px)"},
+    hidden: {opacity: 0, scale: 0.96},
     visible: {
         opacity: 1,
         scale: 1,
-        filter: "blur(0px)",
-        transition: {duration: 0.5, ease: EASE_OUT},
+        transition: {duration: DURATION_NORMAL, ease: EASE_OUT},
     },
 };
 
+/// Slight spring overshoot for celebratory moments. Use rarely.
 export const popInVariants: Variants = {
-    hidden: {opacity: 0, scale: 0.85},
+    hidden: {opacity: 0, scale: 0.94},
     visible: {opacity: 1, scale: 1, transition: SPRING_SNAP},
 };
 
@@ -112,9 +124,11 @@ export function FadeIn({children, delay = 0, y = 12, whenInView = false, classNa
         return <div className={className}>{children}</div>;
     }
 
-    const initial = {opacity: 0, y, filter: "blur(6px)"};
-    const animate = should ? {opacity: 1, y: 0, filter: "blur(0px)"} : undefined;
-    const transition = {duration: 0.55, ease: EASE_OUT, delay};
+    // Transform + opacity only. No blur, no filter — those are expensive,
+    // run on the CPU on Safari, and obscure the content you are revealing.
+    const initial = {opacity: 0, y};
+    const animate = should ? {opacity: 1, y: 0} : undefined;
+    const transition = {duration: DURATION_REVEAL, ease: EASE_OUT, delay};
 
     if (as === "section") {
         return (
@@ -356,9 +370,13 @@ interface PressableMotionProps {
 
 export function PressableMotion({children, className, onClick, href, disabled, type = "button"}: PressableMotionProps) {
     const reduced = useReducedMotion();
+    // Emil: 0.97 scale on press for tactile feedback. Hover only on devices
+    // with a real cursor — touch devices trigger hover on tap, causing false
+    // positives. Motion handles whileHover at runtime so we cannot gate it
+    // via CSS @media; we instead keep the scale subtle.
     const interaction = reduced
         ? {}
-        : {whileHover: {scale: 1.015}, whileTap: {scale: 0.97}, transition: SPRING_SNAP};
+        : {whileHover: {scale: 1.02}, whileTap: {scale: 0.97}, transition: SPRING_SNAP};
 
     if (href) {
         return (
@@ -397,16 +415,17 @@ export function HoverLift({children, className}: {children: ReactNode; className
 // Use for changing labels / status text where you want continuity.
 // --------------------------------------------------------------------------
 
+/// Value swap with quick crossfade. Asymmetric — enter slower than exit
+/// because the exit is the system responding, the enter is the new content.
 export function CrossfadeText({children, value, className}: {children: ReactNode; value: string; className?: string}) {
     return (
         <span className={className}>
             <AnimatePresence mode="wait" initial={false}>
                 <motion.span
                     key={value}
-                    initial={{opacity: 0, y: 4}}
-                    animate={{opacity: 1, y: 0}}
-                    exit={{opacity: 0, y: -4}}
-                    transition={{duration: 0.22, ease: EASE_OUT}}
+                    initial={{opacity: 0, y: 3}}
+                    animate={{opacity: 1, y: 0, transition: {duration: DURATION_NORMAL, ease: EASE_OUT}}}
+                    exit={{opacity: 0, y: -3, transition: {duration: DURATION_FAST, ease: EASE_OUT}}}
                     style={{display: "inline-block"}}
                 >
                     {children}

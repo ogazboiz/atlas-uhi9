@@ -132,7 +132,38 @@ body {
 /* Reset some defaults that fight the design */
 button {
     cursor: pointer;
+    /* Emil's rule: every pressable element gets scale(0.97) on :active for
+       tactile feedback. Use a strong custom ease-out at 160ms — the default
+       CSS keywords lack punch. CSS handles this off the main thread, so it
+       stays smooth even when JS is busy. */
+    transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+button:active:not(:disabled) {
+    transform: scale(0.97);
 }
 button:disabled {
     cursor: not-allowed;
+}
+
+/* Same press feedback for anchor-styled buttons (CTAs use <Link>). */
+a[role="button"]:active,
+a.button-like:active,
+.atlas-press:active {
+    transform: scale(0.97);
+    transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* prefers-reduced-motion: keep colors and opacity, drop transforms. */
+@media (prefers-reduced-motion: reduce) {
+    button {
+        transition: none;
+    }
+    button:active:not(:disabled) {
+        transform: none;
+    }
+    .atlas-fade-in,
+    .atlas-pulse,
+    .atlas-pulse::before {
+        animation: none !important;
+    }
 }
