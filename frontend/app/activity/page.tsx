@@ -6,6 +6,7 @@ import {parseAbiItem} from "viem";
 import {ATLAS} from "@/lib/contracts";
 import {AtlasChat} from "@/components/AtlasChat";
 import {Chip, PageFrame, Shell, StatCard} from "@/components/Shell";
+import {FadeIn, HoverLift, NumberTicker, Stagger, StaggerItem} from "@/components/motion/Motion";
 
 type ActivityKind =
     | "Deposit"
@@ -197,16 +198,44 @@ export default function ActivityPage() {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-                    <StatCard label="Total events" value={loading ? "…" : counts.total} tone="default" />
-                    <StatCard label="Deposits" value={loading ? "…" : counts.deposits} tone="emerald" />
-                    <StatCard label="Withdrawals" value={loading ? "…" : counts.withdraws} tone="amber" />
-                    <StatCard
-                        label="Reactive callbacks"
-                        value={loading ? "…" : counts.callbacks}
-                        tone="violet"
-                    />
-                </div>
+                <Stagger className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4" staggerChildren={0.07}>
+                    <StaggerItem variant="scaleIn">
+                        <HoverLift>
+                            <StatCard
+                                label="Total events"
+                                value={loading ? "…" : <NumberTicker value={counts.total} />}
+                                tone="default"
+                            />
+                        </HoverLift>
+                    </StaggerItem>
+                    <StaggerItem variant="scaleIn">
+                        <HoverLift>
+                            <StatCard
+                                label="Deposits"
+                                value={loading ? "…" : <NumberTicker value={counts.deposits} />}
+                                tone="emerald"
+                            />
+                        </HoverLift>
+                    </StaggerItem>
+                    <StaggerItem variant="scaleIn">
+                        <HoverLift>
+                            <StatCard
+                                label="Withdrawals"
+                                value={loading ? "…" : <NumberTicker value={counts.withdraws} />}
+                                tone="amber"
+                            />
+                        </HoverLift>
+                    </StaggerItem>
+                    <StaggerItem variant="scaleIn">
+                        <HoverLift>
+                            <StatCard
+                                label="Reactive callbacks"
+                                value={loading ? "…" : <NumberTicker value={counts.callbacks} />}
+                                tone="violet"
+                            />
+                        </HoverLift>
+                    </StaggerItem>
+                </Stagger>
 
                 <div className="mt-6 grid gap-4 lg:grid-cols-[1.5fr_1fr]">
                     <FeedPanel
@@ -306,35 +335,34 @@ function FeedPanel({
                     </div>
                 </div>
             ) : (
-                <ul className="atlas-card divide-y divide-white/[0.04] overflow-hidden">
+                <Stagger as="ul" className="atlas-card divide-y divide-white/[0.04] overflow-hidden" staggerChildren={0.03} delayChildren={0}>
                     {events.map((e, i) => (
-                        <li
-                            key={`${e.txHash}-${i}`}
-                            className="atlas-fade-in flex items-center justify-between gap-3 px-4 py-3.5 transition-colors hover:bg-white/[0.02]"
-                        >
-                            <div className="flex min-w-0 items-center gap-3">
-                                <KindBadge kind={e.kind} />
-                                <div className="min-w-0">
-                                    <div className="truncate text-sm font-medium text-zinc-100">{e.primary}</div>
-                                    <div className="truncate text-[11px] text-zinc-500">{e.secondary}</div>
+                        <StaggerItem key={`${e.txHash}-${i}`}>
+                            <li className="flex items-center justify-between gap-3 px-4 py-3.5 transition-colors hover:bg-white/[0.02]">
+                                <div className="flex min-w-0 items-center gap-3">
+                                    <KindBadge kind={e.kind} />
+                                    <div className="min-w-0">
+                                        <div className="truncate text-sm font-medium text-zinc-100">{e.primary}</div>
+                                        <div className="truncate text-[11px] text-zinc-500">{e.secondary}</div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="shrink-0 text-right">
-                                <div className="text-[11px] text-zinc-400">
-                                    {relativeTime(Math.floor(Date.now() / 1000) - e.timestamp)}
+                                <div className="shrink-0 text-right">
+                                    <div className="text-[11px] text-zinc-400">
+                                        {relativeTime(Math.floor(Date.now() / 1000) - e.timestamp)}
+                                    </div>
+                                    <a
+                                        href={`https://sepolia.uniscan.xyz/tx/${e.txHash}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="font-mono text-[10px] text-zinc-500 underline underline-offset-2 hover:text-zinc-300"
+                                    >
+                                        {short(e.txHash)}
+                                    </a>
                                 </div>
-                                <a
-                                    href={`https://sepolia.uniscan.xyz/tx/${e.txHash}`}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="font-mono text-[10px] text-zinc-500 underline underline-offset-2 hover:text-zinc-300"
-                                >
-                                    {short(e.txHash)}
-                                </a>
-                            </div>
-                        </li>
+                            </li>
+                        </StaggerItem>
                     ))}
-                </ul>
+                </Stagger>
             )}
         </section>
     );

@@ -6,6 +6,7 @@ import {formatUnits} from "viem";
 import {ATLAS, REACTIVE} from "@/lib/contracts";
 import {ATLAS_HOOK_ABI, ATLAS_VAULT_ABI, MOCK_ORACLE_ABI} from "@/lib/abis";
 import {Chip, PageFrame, PrimaryButton, SecondaryButton, Shell, StatCard} from "@/components/Shell";
+import {FadeIn, HoverLift, NumberTicker, SectionReveal, Stagger, StaggerItem} from "@/components/motion/Motion";
 
 const EXPLORER = "https://sepolia.uniscan.xyz/address";
 
@@ -34,49 +35,59 @@ function Hero() {
             <div className="absolute left-1/2 top-0 -z-10 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-emerald-500/[0.08] blur-[120px]" />
 
             <PageFrame>
-                <div className="mx-auto max-w-4xl pt-8 text-center sm:pt-16">
-                    <Chip tone="emerald">
-                        <span className="relative flex h-1.5 w-1.5">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                        </span>
-                        UHI9 Hookathon · Reactive Network Sponsor Track · Live testnet
-                    </Chip>
+                <Stagger className="mx-auto max-w-4xl pt-8 text-center sm:pt-16" staggerChildren={0.08}>
+                    <StaggerItem>
+                        <Chip tone="emerald">
+                            <span className="relative flex h-1.5 w-1.5">
+                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
+                                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                            </span>
+                            UHI9 Hookathon · Reactive Network Sponsor Track · Live testnet
+                        </Chip>
+                    </StaggerItem>
 
-                    <h1 className="mt-7 text-5xl font-semibold tracking-tight sm:text-6xl md:text-7xl">
-                        <span className="atlas-text-gradient">Hedged LP yield.</span>
-                        <br />
-                        <span className="atlas-text-emerald-gradient">Autonomous. Fixed APR.</span>
-                    </h1>
+                    <StaggerItem>
+                        <h1 className="mt-7 text-5xl font-semibold tracking-tight sm:text-6xl md:text-7xl">
+                            <span className="atlas-text-gradient">Hedged LP yield.</span>
+                            <br />
+                            <span className="atlas-text-emerald-gradient">Autonomous. Fixed APR.</span>
+                        </h1>
+                    </StaggerItem>
 
-                    <p className="mx-auto mt-7 max-w-2xl text-base text-zinc-400 sm:text-lg">
-                        Atlas is a Uniswap v4 hook that pairs every LP deposit with a delta-matched perpetual short.
-                        A Reactive Smart Contract handles rebalancing across chains. You earn a flat 8% APR while
-                        the system stays delta-neutral.
-                    </p>
+                    <StaggerItem>
+                        <p className="mx-auto mt-7 max-w-2xl text-base text-zinc-400 sm:text-lg">
+                            Atlas is a Uniswap v4 hook that pairs every LP deposit with a delta-matched perpetual
+                            short. A Reactive Smart Contract handles rebalancing across chains. You earn a flat
+                            8% APR while the system stays delta-neutral.
+                        </p>
+                    </StaggerItem>
 
-                    <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                        <PrimaryButton href="/compare" size="lg">
-                            Open the live demo
-                            <Arrow />
-                        </PrimaryButton>
-                        <SecondaryButton href="/deposit" size="lg">
-                            Try a deposit
-                        </SecondaryButton>
-                    </div>
+                    <StaggerItem>
+                        <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                            <PrimaryButton href="/compare" size="lg">
+                                Open the live demo
+                                <Arrow />
+                            </PrimaryButton>
+                            <SecondaryButton href="/deposit" size="lg">
+                                Try a deposit
+                            </SecondaryButton>
+                        </div>
+                    </StaggerItem>
 
-                    <div className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-zinc-500">
-                        <span className="flex items-center gap-1.5">
-                            <Dot color="#10b981" /> 6 verified contracts
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                            <Dot color="#38bdf8" /> 15-20s cross-chain loop
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                            <Dot color="#a78bfa" /> 61/61 tests passing
-                        </span>
-                    </div>
-                </div>
+                    <StaggerItem>
+                        <div className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-zinc-500">
+                            <span className="flex items-center gap-1.5">
+                                <Dot color="#10b981" /> 6 verified contracts
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                                <Dot color="#38bdf8" /> 15-20s cross-chain loop
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                                <Dot color="#a78bfa" /> 61/61 tests passing
+                            </span>
+                        </div>
+                    </StaggerItem>
+                </Stagger>
             </PageFrame>
         </section>
     );
@@ -112,51 +123,90 @@ function LiveMetricsRow() {
         query: {refetchInterval: 60000},
     });
 
-    const tvl =
-        totalAssets !== undefined
-            ? Number(formatUnits(totalAssets as bigint, 18)).toLocaleString(undefined, {maximumFractionDigits: 0})
-            : "—";
-    const apr = couponBps !== undefined ? `${(Number(couponBps) / 100).toFixed(2)}%` : "—";
-    const eth = oraclePrice !== undefined ? `$${Number(formatUnits(oraclePrice as bigint, 18)).toFixed(2)}` : "—";
+    const tvlNum = totalAssets !== undefined ? Number(formatUnits(totalAssets as bigint, 18)) : null;
+    const aprNum = couponBps !== undefined ? Number(couponBps) / 100 : null;
+    const ethNum = oraclePrice !== undefined ? Number(formatUnits(oraclePrice as bigint, 18)) : null;
     const wired = reactiveCb !== undefined && (reactiveCb as string).toLowerCase() === REACTIVE.callback.toLowerCase();
 
     return (
         <PageFrame>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-                <StatCard
-                    label="Vault TVL"
-                    value={
-                        <span>
-                            {tvl}
-                            <span className="ml-1.5 text-base text-zinc-500">USDC</span>
-                        </span>
-                    }
-                    hint="Live on-chain reserves"
-                    tone="emerald"
-                    icon={<IconVault />}
-                />
-                <StatCard
-                    label="Current APR"
-                    value={apr}
-                    hint="Flat per-block coupon"
-                    tone="emerald"
-                    icon={<IconChart />}
-                />
-                <StatCard
-                    label="Reactive callback"
-                    value={wired ? "Wired" : "—"}
-                    hint="Cross-chain target on hook"
-                    tone="violet"
-                    icon={<IconBolt />}
-                />
-                <StatCard
-                    label="ETH oracle"
-                    value={eth}
-                    hint="Updates trigger the loop"
-                    tone="sky"
-                    icon={<IconOracle />}
-                />
-            </div>
+            <Stagger className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4" whenInView staggerChildren={0.08}>
+                <StaggerItem variant="scaleIn">
+                    <HoverLift>
+                        <StatCard
+                            label="Vault TVL"
+                            value={
+                                <span>
+                                    {tvlNum === null ? (
+                                        "—"
+                                    ) : (
+                                        <NumberTicker value={tvlNum} maximumFractionDigits={0} />
+                                    )}
+                                    <span className="ml-1.5 text-base text-zinc-500">USDC</span>
+                                </span>
+                            }
+                            hint="Live on-chain reserves"
+                            tone="emerald"
+                            icon={<IconVault />}
+                        />
+                    </HoverLift>
+                </StaggerItem>
+                <StaggerItem variant="scaleIn">
+                    <HoverLift>
+                        <StatCard
+                            label="Current APR"
+                            value={
+                                aprNum === null ? (
+                                    "—"
+                                ) : (
+                                    <NumberTicker
+                                        value={aprNum}
+                                        minimumFractionDigits={2}
+                                        maximumFractionDigits={2}
+                                        suffix="%"
+                                    />
+                                )
+                            }
+                            hint="Flat per-block coupon"
+                            tone="emerald"
+                            icon={<IconChart />}
+                        />
+                    </HoverLift>
+                </StaggerItem>
+                <StaggerItem variant="scaleIn">
+                    <HoverLift>
+                        <StatCard
+                            label="Reactive callback"
+                            value={wired ? "Wired" : "—"}
+                            hint="Cross-chain target on hook"
+                            tone="violet"
+                            icon={<IconBolt />}
+                        />
+                    </HoverLift>
+                </StaggerItem>
+                <StaggerItem variant="scaleIn">
+                    <HoverLift>
+                        <StatCard
+                            label="ETH oracle"
+                            value={
+                                ethNum === null ? (
+                                    "—"
+                                ) : (
+                                    <NumberTicker
+                                        value={ethNum}
+                                        prefix="$"
+                                        minimumFractionDigits={2}
+                                        maximumFractionDigits={2}
+                                    />
+                                )
+                            }
+                            hint="Updates trigger the loop"
+                            tone="sky"
+                            icon={<IconOracle />}
+                        />
+                    </HoverLift>
+                </StaggerItem>
+            </Stagger>
         </PageFrame>
     );
 }
@@ -189,7 +239,7 @@ const FEATURES = [
 function FeatureHighlights() {
     return (
         <PageFrame>
-            <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
+            <Stagger className="grid gap-3 sm:grid-cols-3 sm:gap-4" whenInView staggerChildren={0.1}>
                 {FEATURES.map((f) => {
                     const ring =
                         f.accent === "emerald"
@@ -198,16 +248,24 @@ function FeatureHighlights() {
                               ? "bg-violet-500/10 text-violet-300 ring-violet-500/20"
                               : "bg-sky-500/10 text-sky-300 ring-sky-500/20";
                     return (
-                        <div key={f.title} className="atlas-card group p-6 transition-all hover:bg-white/[0.03]">
-                            <div className={`mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg ring-1 ${ring}`}>
-                                {f.icon}
-                            </div>
-                            <h3 className="mb-1.5 text-base font-semibold tracking-tight text-white">{f.title}</h3>
-                            <p className="text-sm leading-relaxed text-zinc-400">{f.body}</p>
-                        </div>
+                        <StaggerItem key={f.title}>
+                            <HoverLift>
+                                <div className="atlas-card group h-full p-6 transition-colors hover:bg-white/[0.03]">
+                                    <div
+                                        className={`mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg ring-1 ${ring}`}
+                                    >
+                                        {f.icon}
+                                    </div>
+                                    <h3 className="mb-1.5 text-base font-semibold tracking-tight text-white">
+                                        {f.title}
+                                    </h3>
+                                    <p className="text-sm leading-relaxed text-zinc-400">{f.body}</p>
+                                </div>
+                            </HoverLift>
+                        </StaggerItem>
                     );
                 })}
-            </div>
+            </Stagger>
         </PageFrame>
     );
 }
@@ -242,21 +300,25 @@ const STEPS = [
 function HowItWorks() {
     return (
         <PageFrame>
-            <div className="mb-7 text-center">
+            <FadeIn whenInView className="mb-7 text-center">
                 <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
                     Four moving parts
                 </div>
                 <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">How Atlas works</h2>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+            </FadeIn>
+            <Stagger className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4" whenInView staggerChildren={0.08}>
                 {STEPS.map((s) => (
-                    <div key={s.n} className="atlas-card p-6">
-                        <div className="text-xs font-mono text-emerald-400">{s.n}</div>
-                        <h3 className="mt-4 text-base font-semibold tracking-tight text-white">{s.title}</h3>
-                        <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">{s.body}</p>
-                    </div>
+                    <StaggerItem key={s.n}>
+                        <HoverLift>
+                            <div className="atlas-card h-full p-6">
+                                <div className="text-xs font-mono text-emerald-400">{s.n}</div>
+                                <h3 className="mt-4 text-base font-semibold tracking-tight text-white">{s.title}</h3>
+                                <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">{s.body}</p>
+                            </div>
+                        </HoverLift>
+                    </StaggerItem>
                 ))}
-            </div>
+            </Stagger>
         </PageFrame>
     );
 }
@@ -268,7 +330,7 @@ function HowItWorks() {
 function DemoCallout() {
     return (
         <PageFrame>
-            <div className="atlas-card-strong relative overflow-hidden p-8 sm:p-10">
+            <FadeIn whenInView y={20} className="atlas-card-strong relative overflow-hidden p-8 sm:p-10">
                 <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
                 <div className="absolute -bottom-24 -left-12 h-72 w-72 rounded-full bg-violet-500/10 blur-3xl" />
                 <div className="relative grid items-center gap-6 lg:grid-cols-[1.4fr_1fr]">
@@ -304,7 +366,7 @@ function DemoCallout() {
                         <DemoMiniStat label="Atlas advantage" value="+17.6%" tone="emerald" sub="after dump" />
                     </div>
                 </div>
-            </div>
+            </FadeIn>
         </PageFrame>
     );
 }
@@ -345,7 +407,7 @@ const CONTRACTS = [
 function ContractAttestations() {
     return (
         <PageFrame>
-            <div className="mb-6">
+            <FadeIn whenInView className="mb-6">
                 <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
                     Onchain proof
                 </div>
@@ -356,40 +418,51 @@ function ContractAttestations() {
                     Every Atlas contract is source-verified on Uniscan. The Reactive contract is verified on
                     reactscan.net. Click through to inspect the bytecode.
                 </p>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            </FadeIn>
+            <Stagger className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3" whenInView staggerChildren={0.05}>
                 {CONTRACTS.map((c) => (
-                    <a
-                        key={c.address}
-                        href={`${EXPLORER}/${c.address}#code`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="atlas-card group flex items-center justify-between p-4 transition-all hover:bg-white/[0.04]"
-                    >
-                        <div>
-                            <div className="text-sm font-medium text-white">{c.label}</div>
-                            <div className="font-mono text-[11px] text-zinc-500">
-                                {c.address.slice(0, 6)}…{c.address.slice(-4)}
-                            </div>
-                        </div>
-                        <span className="text-xs text-zinc-500 transition-colors group-hover:text-emerald-400">→</span>
-                    </a>
+                    <StaggerItem key={c.address}>
+                        <HoverLift>
+                            <a
+                                href={`${EXPLORER}/${c.address}#code`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="atlas-card group flex items-center justify-between p-4 transition-colors hover:bg-white/[0.04]"
+                            >
+                                <div>
+                                    <div className="text-sm font-medium text-white">{c.label}</div>
+                                    <div className="font-mono text-[11px] text-zinc-500">
+                                        {c.address.slice(0, 6)}…{c.address.slice(-4)}
+                                    </div>
+                                </div>
+                                <span className="text-xs text-zinc-500 transition-colors group-hover:text-emerald-400">
+                                    →
+                                </span>
+                            </a>
+                        </HoverLift>
+                    </StaggerItem>
                 ))}
-                <a
-                    href={`${REACTIVE.reactiveExplorer}/address/${REACTIVE.reactive}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="atlas-card group flex items-center justify-between p-4 transition-all hover:bg-white/[0.04]"
-                >
-                    <div>
-                        <div className="text-sm font-medium text-white">Reactive (Lasna)</div>
-                        <div className="font-mono text-[11px] text-zinc-500">
-                            {REACTIVE.reactive.slice(0, 6)}…{REACTIVE.reactive.slice(-4)}
-                        </div>
-                    </div>
-                    <span className="text-xs text-zinc-500 transition-colors group-hover:text-violet-400">→</span>
-                </a>
-            </div>
+                <StaggerItem>
+                    <HoverLift>
+                        <a
+                            href={`${REACTIVE.reactiveExplorer}/address/${REACTIVE.reactive}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="atlas-card group flex items-center justify-between p-4 transition-colors hover:bg-white/[0.04]"
+                        >
+                            <div>
+                                <div className="text-sm font-medium text-white">Reactive (Lasna)</div>
+                                <div className="font-mono text-[11px] text-zinc-500">
+                                    {REACTIVE.reactive.slice(0, 6)}…{REACTIVE.reactive.slice(-4)}
+                                </div>
+                            </div>
+                            <span className="text-xs text-zinc-500 transition-colors group-hover:text-violet-400">
+                                →
+                            </span>
+                        </a>
+                    </HoverLift>
+                </StaggerItem>
+            </Stagger>
         </PageFrame>
     );
 }
@@ -401,7 +474,7 @@ function ContractAttestations() {
 function FinalCTA() {
     return (
         <PageFrame>
-            <div className="atlas-card-strong relative overflow-hidden p-10 text-center sm:p-14">
+            <FadeIn whenInView y={20} className="atlas-card-strong relative overflow-hidden p-10 text-center sm:p-14">
                 <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
                 <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
                     Ready to see it run?
@@ -419,7 +492,7 @@ function FinalCTA() {
                         Open vault
                     </SecondaryButton>
                 </div>
-            </div>
+            </FadeIn>
         </PageFrame>
     );
 }

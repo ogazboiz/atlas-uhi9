@@ -10,6 +10,8 @@ import {ReactiveStatus} from "@/components/ReactiveStatus";
 import {ReactiveEventFeed} from "@/components/ReactiveEventFeed";
 import {HedgeConfidenceGauge} from "@/components/HedgeConfidenceGauge";
 import {HedgedMercury} from "@/components/HedgedMercury";
+import {FadeIn, NumberTicker} from "@/components/motion/Motion";
+import {motion, useReducedMotion} from "motion/react";
 const HOOK_NONCE_ABI = [
     {type: "function", name: "lastNonce", inputs: [], outputs: [{type: "uint256"}], stateMutability: "view"},
 ] as const;
@@ -227,32 +229,71 @@ function StatsRow({
     drawdownPct: number | null;
     atlasAhead: boolean;
 }) {
+    const versusValue = drawdownPct === null ? 0 : Math.abs(drawdownPct);
+
     return (
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
             <StatCard
                 label="ETH price (oracle)"
-                value={currentPrice !== null ? `$${currentPrice.toFixed(2)}` : "—"}
+                value={
+                    currentPrice === null ? (
+                        "—"
+                    ) : (
+                        <NumberTicker
+                            value={currentPrice}
+                            prefix="$"
+                            minimumFractionDigits={2}
+                            maximumFractionDigits={2}
+                        />
+                    )
+                }
                 hint="Updates the demo loop"
                 tone="sky"
             />
             <StatCard
                 label="Vanilla LP value"
-                value={vanillaValue !== null ? `$${vanillaValue.toFixed(2)}` : "—"}
+                value={
+                    vanillaValue === null ? (
+                        "—"
+                    ) : (
+                        <NumberTicker
+                            value={vanillaValue}
+                            prefix="$"
+                            minimumFractionDigits={2}
+                            maximumFractionDigits={2}
+                        />
+                    )
+                }
                 hint="Half ETH, half USDC, unhedged"
                 tone={atlasAhead ? "rose" : "default"}
             />
             <StatCard
                 label="Atlas LP value"
-                value={`$${atlasValue.toFixed(2)}`}
+                value={
+                    <NumberTicker
+                        value={atlasValue}
+                        prefix="$"
+                        minimumFractionDigits={2}
+                        maximumFractionDigits={2}
+                    />
+                }
                 hint="Delta-neutral, flat by design"
                 tone="emerald"
             />
             <StatCard
                 label="Atlas vs vanilla"
                 value={
-                    drawdownPct !== null
-                        ? `${atlasAhead ? "+" : ""}${(-drawdownPct).toFixed(2)}%`
-                        : "—"
+                    drawdownPct === null ? (
+                        "—"
+                    ) : (
+                        <NumberTicker
+                            value={versusValue}
+                            prefix={atlasAhead ? "+" : "-"}
+                            minimumFractionDigits={2}
+                            maximumFractionDigits={2}
+                            suffix="%"
+                        />
+                    )
                 }
                 hint={atlasAhead ? "Atlas is outperforming" : "Vanilla is ahead (briefly)"}
                 tone={atlasAhead ? "emerald" : "rose"}
@@ -284,6 +325,56 @@ function Legend({color, label}: {color: string; label: string}) {
             <span className="inline-block h-2.5 w-2.5 rounded-full" style={{backgroundColor: color}} />
             {label}
         </span>
+    );
+}
+
+// ---------------------------------------------------------------------------
+// TriggerButton — press feedback with spring + active pulse.
+// ---------------------------------------------------------------------------
+
+function TriggerButton({
+    button,
+    disabled,
+    active,
+    onTrigger,
+}: {
+    button: {pct: number; label: string; hint: string; tone: "rose" | "muted" | "emerald"};
+    disabled: boolean;
+    active: boolean;
+    onTrigger: (deltaPct: number) => void;
+}) {
+    const reduced = useReducedMotion();
+    const toneClass =
+        button.tone === "rose"
+            ? "border-rose-500/30 text-rose-200 hover:border-rose-500/60 hover:bg-rose-500/10"
+            : button.tone === "emerald"
+              ? "border-emerald-500/30 text-emerald-200 hover:border-emerald-500/60 hover:bg-emerald-500/10"
+              : "border-white/10 text-zinc-200 hover:border-white/25 hover:bg-white/[0.04]";
+
+    const interaction = reduced
+        ? {}
+        : {
+              whileHover: disabled ? undefined : {scale: 1.02},
+              whileTap: disabled ? undefined : {scale: 0.96},
+              transition: {type: "spring" as const, stiffness: 380, damping: 24, mass: 0.6},
+          };
+
+    return (
+        <motion.button
+            disabled={disabled}
+            onClick={() => onTrigger(button.pct)}
+            className={`group relative flex flex-col items-center justify-center gap-1.5 rounded-xl border px-4 py-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${toneClass} ${active ? "ring-2 ring-emerald-400/60" : ""}`}
+            {...interaction}
+        >
+            <span className="text-base font-semibold">{button.label}</span>
+            <span className="text-[10px] uppercase tracking-wider text-zinc-500">
+                press{" "}
+                <kbd className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-zinc-300">{button.hint}</kbd>
+            </span>
+            {active && (
+                <span className="absolute right-2 top-2 inline-flex h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+            )}
+        </motion.button>
     );
 }
 
@@ -333,31 +424,15 @@ function TriggerPanel({
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {buttons.map((b) => {
-                    const active = lastTrigger === b.pct && busy;
-                    const toneClass =
-                        b.tone === "rose"
-                            ? "border-rose-500/30 text-rose-200 hover:border-rose-500/60 hover:bg-rose-500/10"
-                            : b.tone === "emerald"
-                              ? "border-emerald-500/30 text-emerald-200 hover:border-emerald-500/60 hover:bg-emerald-500/10"
-                              : "border-white/10 text-zinc-200 hover:border-white/25 hover:bg-white/[0.04]";
-                    return (
-                        <button
-                            key={b.pct}
-                            disabled={!isConnected || busy || currentPrice === null}
-                            onClick={() => onTrigger(b.pct)}
-                            className={`group relative flex flex-col items-center justify-center gap-1.5 rounded-xl border px-4 py-4 text-sm font-medium transition-all disabled:cursor-not-allowed disabled:opacity-40 ${toneClass} ${active ? "ring-2 ring-emerald-400/60" : ""}`}
-                        >
-                            <span className="text-base font-semibold">{b.label}</span>
-                            <span className="text-[10px] uppercase tracking-wider text-zinc-500">
-                                press <kbd className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-zinc-300">{b.hint}</kbd>
-                            </span>
-                            {active && (
-                                <span className="absolute right-2 top-2 inline-flex h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                            )}
-                        </button>
-                    );
-                })}
+                {buttons.map((b) => (
+                    <TriggerButton
+                        key={b.pct}
+                        button={b}
+                        disabled={!isConnected || busy || currentPrice === null}
+                        active={lastTrigger === b.pct && busy}
+                        onTrigger={onTrigger}
+                    />
+                ))}
             </div>
 
             <p className="mt-4 text-xs text-zinc-500">

@@ -9,6 +9,7 @@ import {ATLAS} from "@/lib/contracts";
 import {ATLAS_VAULT_ABI, ERC20_ABI} from "@/lib/abis";
 import {AtlasChat} from "@/components/AtlasChat";
 import {Chip, PageFrame, PrimaryButton, SecondaryButton, Shell, StatCard} from "@/components/Shell";
+import {FadeIn, HoverLift, Stagger, StaggerItem} from "@/components/motion/Motion";
 
 const DEPOSIT_EVENT = parseAbiItem(
     "event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares)",
@@ -202,17 +203,37 @@ function Summary({
           : "Deposit history not yet indexed";
 
     return (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-            <StatCard label="aLP shares" value={hasPosition ? fmt(shares, 4) : "—"} hint="ERC-4626 token balance" />
-            <StatCard
-                label="Claim value"
-                value={hasPosition ? `${fmt(claim, 2)} USDC` : "—"}
-                hint="Live previewRedeem read"
-                tone="emerald"
-            />
-            <StatCard label="Accrued yield" value={yieldValue} hint={yieldHint} tone="emerald" />
-            <StatCard label="USDC wallet" value={fmt(usdcBalance, 2)} hint="Mock test USDC" />
-        </div>
+        <Stagger className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4" staggerChildren={0.07}>
+            <StaggerItem variant="scaleIn">
+                <HoverLift>
+                    <StatCard
+                        label="aLP shares"
+                        value={hasPosition ? fmt(shares, 4) : "—"}
+                        hint="ERC-4626 token balance"
+                    />
+                </HoverLift>
+            </StaggerItem>
+            <StaggerItem variant="scaleIn">
+                <HoverLift>
+                    <StatCard
+                        label="Claim value"
+                        value={hasPosition ? `${fmt(claim, 2)} USDC` : "—"}
+                        hint="Live previewRedeem read"
+                        tone="emerald"
+                    />
+                </HoverLift>
+            </StaggerItem>
+            <StaggerItem variant="scaleIn">
+                <HoverLift>
+                    <StatCard label="Accrued yield" value={yieldValue} hint={yieldHint} tone="emerald" />
+                </HoverLift>
+            </StaggerItem>
+            <StaggerItem variant="scaleIn">
+                <HoverLift>
+                    <StatCard label="USDC wallet" value={fmt(usdcBalance, 2)} hint="Mock test USDC" />
+                </HoverLift>
+            </StaggerItem>
+        </Stagger>
     );
 }
 

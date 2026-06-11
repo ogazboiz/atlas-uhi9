@@ -6,6 +6,7 @@ import {formatUnits, maxUint256, parseUnits} from "viem";
 import {ATLAS} from "@/lib/contracts";
 import {ATLAS_VAULT_ABI, ERC20_ABI} from "@/lib/abis";
 import {Chip, PageFrame, PrimaryButton, SecondaryButton, Shell, StatCard} from "@/components/Shell";
+import {FadeIn, HoverLift, NumberTicker, Stagger, StaggerItem} from "@/components/motion/Motion";
 
 const FAUCET_AMOUNT = parseUnits("10000", 18);
 
@@ -224,40 +225,64 @@ function VaultStats({
     couponBps?: bigint;
     bufferHealth?: bigint;
 }) {
-    const tvl = totalAssets === undefined ? "—" : `${fmt(totalAssets, 0)}`;
-    const apr = couponBps === undefined ? "—" : `${(Number(couponBps) / 100).toFixed(2)}%`;
-    const bh =
+    const tvlNum =
+        totalAssets === undefined ? null : Number(totalAssets) / 1e18;
+    const aprNum = couponBps === undefined ? null : Number(couponBps) / 100;
+    const bhDisplay =
         bufferHealth === undefined
             ? "—"
             : bufferHealth === maxUint256
               ? "∞"
               : `${(Number(bufferHealth) / 10000).toFixed(2)}x`;
     return (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
-            <StatCard
-                label="Vault TVL"
-                value={
-                    <span>
-                        {tvl}
-                        <span className="ml-1.5 text-base text-zinc-500">USDC</span>
-                    </span>
-                }
-                hint="Total assets under management"
-                tone="emerald"
-            />
-            <StatCard
-                label="Current coupon"
-                value={apr}
-                hint="Flat per-block APR"
-                tone="emerald"
-            />
-            <StatCard
-                label="Buffer health"
-                value={bh}
-                hint="Vault surplus vs 30-day obligation"
-                tone="sky"
-            />
-        </div>
+        <Stagger className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4" staggerChildren={0.08}>
+            <StaggerItem variant="scaleIn">
+                <HoverLift>
+                    <StatCard
+                        label="Vault TVL"
+                        value={
+                            <span>
+                                {tvlNum === null ? "—" : <NumberTicker value={tvlNum} maximumFractionDigits={0} />}
+                                <span className="ml-1.5 text-base text-zinc-500">USDC</span>
+                            </span>
+                        }
+                        hint="Total assets under management"
+                        tone="emerald"
+                    />
+                </HoverLift>
+            </StaggerItem>
+            <StaggerItem variant="scaleIn">
+                <HoverLift>
+                    <StatCard
+                        label="Current coupon"
+                        value={
+                            aprNum === null ? (
+                                "—"
+                            ) : (
+                                <NumberTicker
+                                    value={aprNum}
+                                    minimumFractionDigits={2}
+                                    maximumFractionDigits={2}
+                                    suffix="%"
+                                />
+                            )
+                        }
+                        hint="Flat per-block APR"
+                        tone="emerald"
+                    />
+                </HoverLift>
+            </StaggerItem>
+            <StaggerItem variant="scaleIn">
+                <HoverLift>
+                    <StatCard
+                        label="Buffer health"
+                        value={bhDisplay}
+                        hint="Vault surplus vs 30-day obligation"
+                        tone="sky"
+                    />
+                </HoverLift>
+            </StaggerItem>
+        </Stagger>
     );
 }
 
@@ -457,36 +482,52 @@ function PositionCard({
 
 function Explainer() {
     return (
-        <section className="atlas-card-strong mt-6 p-6">
+        <FadeIn whenInView y={16} as="section" className="atlas-card-strong mt-6 p-6">
             <div className="mb-4">
                 <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
                     What you are seeing
                 </div>
                 <h2 className="mt-1 text-lg font-semibold tracking-tight text-white">The vault flow</h2>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-                <ExplainItem
-                    n="01"
-                    title="Mock tokens, real flow"
-                    body="The mock USDC and WETH are local testnet tokens. The mint button gives you 10k test USDC, bypassing the Sepolia faucet."
-                />
-                <ExplainItem
-                    n="02"
-                    title="Deposits mint aLP shares"
-                    body="One transaction transfers USDC to the vault and mints ERC-4626 aLP shares to your wallet. previewRedeem tells you the current claim value."
-                />
-                <ExplainItem
-                    n="03"
-                    title="Shares accrue lazily"
-                    body="totalAssets grows in storage at the coupon rate. No per-block gas. Your previewRedeem goes up over time without any action."
-                />
-                <ExplainItem
-                    n="04"
-                    title="Buffer health protects payouts"
-                    body="Above 1.5x means the vault is over-funded. Below 0.5x triggers auto-pause and a coupon halve until the buffer recovers."
-                />
-            </div>
-        </section>
+            <Stagger className="grid gap-4 sm:grid-cols-2" whenInView staggerChildren={0.07}>
+                <StaggerItem>
+                    <HoverLift>
+                        <ExplainItem
+                            n="01"
+                            title="Mock tokens, real flow"
+                            body="The mock USDC and WETH are local testnet tokens. The mint button gives you 10k test USDC, bypassing the Sepolia faucet."
+                        />
+                    </HoverLift>
+                </StaggerItem>
+                <StaggerItem>
+                    <HoverLift>
+                        <ExplainItem
+                            n="02"
+                            title="Deposits mint aLP shares"
+                            body="One transaction transfers USDC to the vault and mints ERC-4626 aLP shares to your wallet. previewRedeem tells you the current claim value."
+                        />
+                    </HoverLift>
+                </StaggerItem>
+                <StaggerItem>
+                    <HoverLift>
+                        <ExplainItem
+                            n="03"
+                            title="Shares accrue lazily"
+                            body="totalAssets grows in storage at the coupon rate. No per-block gas. Your previewRedeem goes up over time without any action."
+                        />
+                    </HoverLift>
+                </StaggerItem>
+                <StaggerItem>
+                    <HoverLift>
+                        <ExplainItem
+                            n="04"
+                            title="Buffer health protects payouts"
+                            body="Above 1.5x means the vault is over-funded. Below 0.5x triggers auto-pause and a coupon halve until the buffer recovers."
+                        />
+                    </HoverLift>
+                </StaggerItem>
+            </Stagger>
+        </FadeIn>
     );
 }
 

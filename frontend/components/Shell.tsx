@@ -4,6 +4,7 @@ import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {ConnectButton} from "@rainbow-me/rainbowkit";
 import {type ReactNode} from "react";
+import {FloatIcon} from "@/components/motion/Motion";
 
 const NAV = [
     {href: "/compare", label: "Compare"},
@@ -33,7 +34,9 @@ function Header() {
         <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#050608]/70 backdrop-blur-xl">
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
                 <Link href="/" className="group flex items-center gap-2.5">
-                    <AtlasMark />
+                    <FloatIcon amplitude={3} period={4.6}>
+                        <AtlasMark />
+                    </FloatIcon>
                     <span className="text-[15px] font-semibold tracking-tight text-white">Atlas</span>
                     <span className="hidden sm:inline rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-400">
                         Testnet
