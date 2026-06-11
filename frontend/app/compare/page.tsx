@@ -9,6 +9,10 @@ import {PriceChart, type ChartPoint} from "@/components/PriceChart";
 import {ReactiveStatus} from "@/components/ReactiveStatus";
 import {ReactiveEventFeed} from "@/components/ReactiveEventFeed";
 import {HedgeConfidenceGauge} from "@/components/HedgeConfidenceGauge";
+import {HedgedMercury} from "@/components/HedgedMercury";
+const HOOK_NONCE_ABI = [
+    {type: "function", name: "lastNonce", inputs: [], outputs: [{type: "uint256"}], stateMutability: "view"},
+] as const;
 import {Chip, PageFrame, SectionHeader, Shell, StatCard} from "@/components/Shell";
 
 /// Initial LP composition for the chart: 1 ETH + 3500 USDC.
@@ -27,6 +31,12 @@ export default function ComparePage() {
         abi: MOCK_ORACLE_ABI,
         functionName: "getPrice",
         query: {refetchInterval: 1500},
+    });
+    const {data: lastNonce} = useReadContract({
+        address: ATLAS.hook,
+        abi: HOOK_NONCE_ABI,
+        functionName: "lastNonce",
+        query: {refetchInterval: 5000},
     });
 
     const currentPrice = useMemo(() => {
@@ -61,12 +71,18 @@ export default function ComparePage() {
     const [pendingTx, setPendingTx] = useState<`0x${string}` | undefined>();
     const {isLoading: txMining} = useWaitForTransactionReceipt({hash: pendingTx});
     const [lastTrigger, setLastTrigger] = useState<number | null>(null);
+    const [impactKey, setImpactKey] = useState(0);
+
+    // Heal pulse increments whenever hook.lastNonce ticks (Reactive callback landed).
+    const nonceNumber = lastNonce !== undefined ? Number(lastNonce as bigint) : 0;
 
     const triggerVolatility = useCallback(
         async (deltaPct: number) => {
             if (!currentPrice || busy || !isConnected) return;
             setBusy(true);
             setLastTrigger(deltaPct);
+            // Fire local impact immediately so the blob reacts before tx confirms.
+            setImpactKey((k) => k + Math.abs(deltaPct) * (deltaPct > 0 ? -1 : 1) || 1);
             try {
                 const newPrice = currentPrice * (1 + deltaPct / 100);
                 const hash = await writeContractAsync({
@@ -125,6 +141,35 @@ export default function ComparePage() {
                         it stays flat. The vanilla position tracks ETH price. Press <Kbd>1</Kbd> to dump 15% and
                         watch the divergence open up live.
                     </p>
+                </div>
+
+                {/* Signature interactive hero: hedged mercury blobs */}
+                <div className="atlas-card-strong relative mb-6 overflow-hidden p-4 sm:p-6">
+                    <div className="absolute left-1/2 top-0 -z-10 h-72 w-72 -translate-x-1/2 rounded-full bg-emerald-500/[0.08] blur-[100px]" />
+                    <div className="absolute right-1/4 bottom-0 -z-10 h-48 w-48 rounded-full bg-violet-500/[0.08] blur-[80px]" />
+                    <div className="mb-3 flex items-center justify-between">
+                        <div>
+                            <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+                                The hedge, made visible
+                            </div>
+                            <h2 className="mt-1 text-lg font-semibold tracking-tight text-white">
+                                Drag the blobs. Press 1-4 below. Watch the difference.
+                            </h2>
+                        </div>
+                        <span className="hidden items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-emerald-300 sm:inline-flex">
+                            <span className="relative flex h-1.5 w-1.5">
+                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
+                                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                            </span>
+                            Liquid simulation
+                        </span>
+                    </div>
+                    <HedgedMercury
+                        impactKey={impactKey}
+                        healPulse={nonceNumber}
+                        vanillaValue={vanillaValue ?? undefined}
+                        atlasValue={ATLAS_FLAT_VALUE}
+                    />
                 </div>
 
                 {/* Sticky stats bar */}
