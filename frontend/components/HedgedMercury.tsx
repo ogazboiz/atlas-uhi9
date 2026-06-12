@@ -61,7 +61,12 @@ type Ripple = {
 
 const POINTS_PER_BLOB = 44;
 const ITERATIONS = 8;
+/// Atlas snaps back fast. Vanilla drifts back SLOW (8x weaker) so it stays
+/// visibly dented after impact but does not walk off-canvas under repeated
+/// presses. Without any vanilla spring, the impact deltas compound and the
+/// blob escapes the viewport — that was the bug.
 const ATLAS_REST_K = 0.06;
+const VANILLA_REST_K = 0.0075;
 const SURFACE_K = 0.55;
 const DAMPING = 0.92;
 const NOISE_AMPLITUDE = 0.06;
@@ -79,9 +84,21 @@ function buildBlob(cx: number, cy: number, radius: number, isAtlas: boolean): Bl
     return {cx, cy, radius, points: pts, isAtlas};
 }
 
-/// Verlet step + global forces.
-function integrate(blob: Blob, dt: number, t: number) {
+/// Verlet step + global forces. Optional bounds clamp keeps the blob from
+/// escaping the visible canvas under repeated impacts.
+function integrate(blob: Blob, dt: number, t: number, bounds: {w: number; h: number}) {
     const {points, cx, cy, isAtlas} = blob;
+    // Atlas uses the full restoring force (the hedge). Vanilla gets a much
+    // weaker one — visible damage persists, but the blob does not slowly
+    // walk off the canvas as users mash Dump/Pump.
+    const restK = isAtlas ? ATLAS_REST_K : VANILLA_REST_K;
+    // Soft margin so the blob silhouette never clips the edge.
+    const margin = blob.radius * 0.35;
+    const minX = margin;
+    const maxX = bounds.w - margin;
+    const minY = margin;
+    const maxY = bounds.h - margin;
+
     for (let i = 0; i < points.length; i++) {
         const p = points[i];
         const vx = (p.x - p.px) * DAMPING;
@@ -94,19 +111,20 @@ function integrate(blob: Blob, dt: number, t: number) {
         const nx = Math.sin(noiseAng) * NOISE_AMPLITUDE;
         const ny = Math.cos(noiseAng * 1.13) * NOISE_AMPLITUDE;
 
-        let fx = nx;
-        let fy = ny;
-
-        // Atlas radial spring back to rest position. THIS is the hedge.
-        if (isAtlas) {
-            const targetX = cx + p.rx;
-            const targetY = cy + p.ry;
-            fx += (targetX - p.x) * ATLAS_REST_K;
-            fy += (targetY - p.y) * ATLAS_REST_K;
-        }
+        const targetX = cx + p.rx;
+        const targetY = cy + p.ry;
+        const fx = nx + (targetX - p.x) * restK;
+        const fy = ny + (targetY - p.y) * restK;
 
         p.x += vx + fx * dt * dt;
         p.y += vy + fy * dt * dt;
+
+        // Hard clamp to canvas bounds. Prevents blobs from being shoved
+        // off-screen by stacked impulses.
+        if (p.x < minX) p.x = minX;
+        if (p.x > maxX) p.x = maxX;
+        if (p.y < minY) p.y = minY;
+        if (p.y > maxY) p.y = maxY;
     }
 }
 
@@ -133,16 +151,30 @@ function solveConstraints(blob: Blob) {
     }
 }
 
-/// Apply a directional impulse from outside the blob. Atlas: short-lived
-/// because it springs back. Vanilla: leaves a permanent deformation.
+/// Apply a directional impulse that DEFORMS the blob (not just translates
+/// it). Points facing the impact direction get pushed inward; points on the
+/// far side barely move. Result: a visible dent. Atlas's rest spring then
+/// smooths the dent out within ~400ms; vanilla's weaker spring leaves it
+/// visibly deformed for ~5-8 seconds.
 function applyImpact(blob: Blob, sign: number, magnitude: number) {
+    // Side of the blob that takes the hit. Random angle adds variety.
     const angle = Math.random() * Math.PI * 2;
-    const force = Math.min(60, 14 + Math.abs(magnitude) * 1.4);
-    const dx = Math.cos(angle) * force;
-    const dy = (Math.sin(angle) * force * 0.6 + force * 0.6) * sign;
+    const dirX = Math.cos(angle);
+    const dirY = Math.sin(angle) * sign;
+    const force = Math.min(28, 8 + Math.abs(magnitude) * 0.7);
     for (const p of blob.points) {
-        p.x += dx;
-        p.y += dy;
+        // Each point's offset from the blob center, normalized.
+        const px = p.rx;
+        const py = p.ry;
+        const len = Math.hypot(px, py) || 1;
+        const facing = (px / len) * dirX + (py / len) * dirY;
+        // Only points on the impact side move (facing > 0). Falloff is the
+        // dot product itself, so the point directly facing takes the full
+        // force, the perpendicular points get half, the far side: zero.
+        if (facing > 0) {
+            p.x += dirX * force * facing;
+            p.y += dirY * force * facing;
+        }
     }
 }
 
@@ -254,16 +286,19 @@ function drawBlob(ctx: CanvasRenderingContext2D, blob: Blob, ts: number) {
             cy,
             Math.max(w, h) * 0.7,
         );
-        grad.addColorStop(0, `rgba(180, 180, 188, 0.75)`);
-        grad.addColorStop(0.55, `rgba(113, 113, 122, 0.55)`);
-        grad.addColorStop(1, `rgba(251, 113, 133, ${0.18 + roseMix})`);
+        // Brightened so the vanilla blob is clearly visible on the dark
+        // surface (was washing out before). Rose tinge grows as the blob
+        // gets stretched, signalling damage from impacts.
+        grad.addColorStop(0, `rgba(228, 228, 235, 0.96)`);
+        grad.addColorStop(0.55, `rgba(161, 161, 170, 0.85)`);
+        grad.addColorStop(1, `rgba(251, 113, 133, ${0.35 + roseMix})`);
         ctx.fillStyle = grad;
-        ctx.shadowColor = "rgba(82, 82, 91, 0.45)";
-        ctx.shadowBlur = 22;
+        ctx.shadowColor = "rgba(244,114,128,0.45)";
+        ctx.shadowBlur = 26;
         ctx.fill();
         ctx.shadowBlur = 0;
 
-        ctx.strokeStyle = `rgba(244,114,128,${0.15 + roseMix * 0.4})`;
+        ctx.strokeStyle = `rgba(244,114,128,${0.30 + roseMix * 0.5})`;
         ctx.lineWidth = 1.2;
         ctx.stroke();
     }
@@ -472,8 +507,9 @@ export function HedgedMercury({
             }
 
             // Physics step.
+            const bounds = sizeRef.current;
             for (const b of blobsRef.current) {
-                integrate(b, dt, t);
+                integrate(b, dt, t, bounds);
                 solveConstraints(b);
             }
 
