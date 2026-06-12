@@ -5,7 +5,7 @@ import Link from "next/link";
 /// (or Loom / Vimeo) URL and push. The route will start 307-redirecting
 /// immediately. The submission form already points at /demovideo, so the
 /// judges always land on the right place without a form resubmit.
-const DEMO_VIDEO_URL = "";
+const DEMO_VIDEO_URL = "https://youtu.be/GTAcm-3ymZs";
 
 export const metadata = {
     title: "Atlas — Demo video",
